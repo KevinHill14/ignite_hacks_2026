@@ -76,7 +76,10 @@ NO CODING NEEDED
 [ ] 5. Build the test corpus          <-- do this early, it unblocks everything
        Owner: ____________
        Collect 8-10 real syllabi from different faculties (arts, engineering,
-       nursing, commerce, studio courses). Save them to docs/samples/.
+       nursing, commerce, studio courses). Save them to syllabus_examples/.
+       One is already in there: CS1026 (Western, Winter 2026). We need more
+       variety - CS1026 has only one cost line, and arts/studio/nursing
+       courses will have far messier fee structures.
        For each one, write down by hand what a human reads as the deadlines
        and the costs. That gives us ground truth to check the extractor
        against.
@@ -120,7 +123,26 @@ CODING
        Where: the "Sanitize + Guard" node already detects this case (it throws
        when under 200 characters). Add an OCR branch before it.
 
-[ ] 10. Retry / partial-failure handling
+[ ] 10. Handle "same item, two prices" (FOUND IN A REAL SYLLABUS)
+       Owner: ____________
+       CS1026 lists ONE required item (the zyBooks access key) with TWO
+       purchase options in different currencies:
+         "The price of the text from the Book Store is $75.00 CDN.
+          The price of the text from zyBook's site is $52.50 USD."
+       The schema currently allows one amount + one currency per item, so the
+       model will likely emit two separate cost entries. The per-currency
+       totals then read as CAD $75.00 AND USD $52.50, which looks like the
+       student pays both. On a money screen that is just wrong.
+       Options:
+         a) add an optional "alternatives" array to the cost schema
+         b) instruct the model to pick the student's local currency and put
+            the other option in notes
+       (b) is much less work and probably good enough for the demo.
+       Files: n8n/syllabus-to-calendar.workflow.json (the schema is inside
+       the "Claude: Extract Schedule + Costs" node), then the totals logic in
+       "Validate + Build Plan"
+
+[ ] 11. Retry / partial-failure handling
        Owner: ____________
        If Google Calendar rejects some events, the pipeline reports how many
        failed but there's no way to retry just those. A "retry failed events"

@@ -13,9 +13,12 @@ token.json
 # --- Uploads / scratch -----------------------------------------------------
 uploads/
 tmp/
+# PDFs are blocked by default so a personal document is never committed by
+# accident. The example corpus is the one deliberate exception.
 *.pdf
 *.docx
-!docs/samples/*.pdf
+!syllabus_examples/*.pdf
+!syllabus_examples/*.docx
 
 # --- Node ------------------------------------------------------------------
 node_modules/

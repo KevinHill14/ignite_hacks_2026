@@ -1,0 +1,152 @@
+===============================================================================
+IGNITEHACKS 2026 - OPEN TASKS
+Pick what you want. Put your name next to it in this file and push, so we
+don't collide.
+===============================================================================
+
+WHAT'S ALREADY DONE
+-------------------
+- n8n pipeline (13 nodes): upload or Google Drive folder -> extract PDF text
+  -> sanitize -> Claude extraction -> validate -> write Google Calendar events
+- Next.js web app: upload UI, term spine graphic, cost ledger, runway
+  projection
+- Security pass: see docs/SECURITY.md
+- Docs: README.md, docs/DEPLOY.md, docs/SECURITY.md
+
+NOT YET TESTED
+--------------
+Nobody has run a real syllabus all the way through yet. That needs Google
+OAuth connected and a real Anthropic API key. Everything before that point is
+verified; the live path is not. Task 2 unblocks this, so it's the most
+valuable thing on the list.
+
+
+===============================================================================
+ROLES - roughly grouped, but take whatever you want
+===============================================================================
+
+-------------------------------------------------------------------------------
+UI DESIGNER
+-------------------------------------------------------------------------------
+
+[ ] 1. Design pass on the results view
+       Owner: ____________
+       The look is a "carbon-copy bursar form": warm gray paper, duplicating
+       machine violet, stamp red. Two rules the design depends on:
+         - VIOLET always means time (deadlines)
+         - RED always means money (costs)
+       Nothing else may use those two colors. Keep that and the page stays
+       readable at a glance.
+       Files: web/src/app/globals.css (all tokens are at the top)
+       Worth looking at:
+         - Empty states. What does the page say before an upload? Right now
+           it's plain.
+         - The loading state during a ~30s pipeline run. Currently one sweeping
+           bar. It could show the actual stages (reading -> extracting ->
+           pricing -> filling calendar).
+         - The "worth checking by hand" warnings block is the ugliest part of
+           the page.
+
+[ ] 2. Mobile layout
+       Owner: ____________
+       Written responsive but never opened on a real phone. The term spine
+       (the SVG timeline) is the risky one - it may be unreadable narrow.
+       Consider a stacked/vertical variant under ~600px.
+       Files: web/src/app/globals.css, web/src/app/page.tsx (TermSpine)
+
+[ ] 3. Accessibility pass
+       Owner: ____________
+       - Tab through the whole page, confirm focus is always visible
+       - Screen reader on the spine (it has an aria-label, is it useful?)
+       - Check color contrast on the faint gray text
+       - Verify prefers-reduced-motion actually kills the animations
+
+[ ] 4. Pitch deck / demo video
+       Owner: ____________
+       The story: "a syllabus is a bill nobody itemized."
+       The two moments that land: the term spine (deadlines above the line,
+       money below it), and the runway table going red when the student runs
+       out of money mid-term. Lead with those, not with the upload box.
+
+
+-------------------------------------------------------------------------------
+NO CODING NEEDED
+-------------------------------------------------------------------------------
+
+[ ] 5. Build the test corpus          <-- do this early, it unblocks everything
+       Owner: ____________
+       Collect 8-10 real syllabi from different faculties (arts, engineering,
+       nursing, commerce, studio courses). Save them to docs/samples/.
+       For each one, write down by hand what a human reads as the deadlines
+       and the costs. That gives us ground truth to check the extractor
+       against.
+       What will break it, and what we most want to catch:
+         - "Week 6" instead of an actual date
+         - schedule tables that are images, not text
+         - fees buried in a paragraph instead of a list
+         - textbooks named with no price
+
+[ ] 6. Google Cloud OAuth setup       <-- blocks the first real end-to-end test
+       Owner: ____________
+       Full steps in docs/DEPLOY.md. Fiddly but no code.
+       Enable Calendar API + Drive API, make an OAuth client, connect both
+       credentials inside n8n.
+       IMPORTANT: point the Calendar node at a THROWAWAY calendar first, not
+       your real one. A bad extraction should pollute something disposable.
+
+
+-------------------------------------------------------------------------------
+CODING
+-------------------------------------------------------------------------------
+
+[ ] 7. Rate limiting on /api/ingest   <-- highest priority before going public
+       Owner: ____________
+       Right now anyone with the URL can upload in a loop and burn the
+       Anthropic credits. Add a per-IP limit.
+       File: web/src/app/api/ingest/route.ts (self-contained, low collision
+       risk)
+
+[ ] 8. Password-gate the web app
+       Owner: ____________
+       Anyone who reaches the URL can currently import to whatever calendar is
+       connected. A single shared password in an env var is enough for a
+       hackathon. Middleware is probably the cleanest place.
+
+[ ] 9. OCR fallback for scanned syllabi
+       Owner: ____________
+       Scanned PDFs have no text layer. Right now the pipeline throws a clear
+       error telling the user to OCR it themselves. Better: detect the short
+       extraction and run OCR automatically.
+       Where: the "Sanitize + Guard" node already detects this case (it throws
+       when under 200 characters). Add an OCR branch before it.
+
+[ ] 10. Retry / partial-failure handling
+       Owner: ____________
+       If Google Calendar rejects some events, the pipeline reports how many
+       failed but there's no way to retry just those. A "retry failed events"
+       button would be a nice touch.
+
+
+===============================================================================
+COORDINATION
+===============================================================================
+
+High collision risk - tell the group before editing:
+  - n8n/syllabus-to-calendar.workflow.json
+  - web/src/app/page.tsx
+
+Low collision risk - safe to grab:
+  - web/src/app/globals.css        (styling only)
+  - web/src/app/api/ingest/route.ts
+  - docs/*
+  - docs/samples/*
+
+Run it locally:
+  npm run gen:secrets
+  npm --prefix web install
+  npm run n8n:up          # n8n at http://localhost:5678
+  npm run web:dev         # app at http://localhost:3000
+
+No Google account connected yet? Click "See a worked example" on the page to
+walk the entire results view with realistic data and no credentials. Good
+enough to design against.

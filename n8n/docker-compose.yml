@@ -1,0 +1,65 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: syllabus-n8n
+    restart: unless-stopped
+
+    # Bind to loopback only. n8n holds Google OAuth refresh tokens and the
+    # Anthropic API key in its credential store; it must never be reachable
+    # from the LAN or the public internet without a vetted reverse proxy.
+    ports:
+      - "127.0.0.1:5678:5678"
+
+    environment:
+      # --- Credential encryption at rest -------------------------------
+      # Every credential n8n stores is AES-256 encrypted with this key.
+      # If it is unset, n8n generates one and writes it into the volume,
+      # which means a leaked volume is a leaked credential store. We pin it
+      # to a value supplied from .env so key custody is explicit.
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:?N8N_ENCRYPTION_KEY must be set}
+
+      # --- Authentication ----------------------------------------------
+      - N8N_USER_MANAGEMENT_DISABLED=false
+      - N8N_SECURE_COOKIE=false # loopback HTTP only; set true behind TLS
+
+      # --- Host / webhook addressing -----------------------------------
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5678/}
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-America/Toronto}
+      - TZ=${GENERIC_TIMEZONE:-America/Toronto}
+
+      # --- Hardening ----------------------------------------------------
+      # Block the Code node from importing arbitrary node modules.
+      - NODE_FUNCTION_ALLOW_EXTERNAL=
+      - NODE_FUNCTION_ALLOW_BUILTIN=
+      # Do not phone home with usage/diagnostics telemetry.
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_VERSION_NOTIFICATIONS_ENABLED=false
+      - N8N_TEMPLATES_ENABLED=false
+      - EXTERNAL_FRONTEND_HOOKS_URLS=
+      - N8N_DIAGNOSTICS_CONFIG_FRONTEND=
+      - N8N_DIAGNOSTICS_CONFIG_BACKEND=
+      # Trim execution history so syllabus text does not linger indefinitely.
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=72
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=none
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_PROGRESS=false
+      - EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=false
+      - N8N_PAYLOAD_SIZE_MAX=24
+
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5678/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+volumes:
+  n8n_data:
+    name: syllabus_n8n_data

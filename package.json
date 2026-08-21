@@ -1,0 +1,20 @@
+{
+  "name": "syllabus-to-calendar",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Drop in a syllabus, get every deadline on your Google Calendar. Next.js UI + n8n pipeline + Claude extraction.",
+  "scripts": {
+    "gen:secrets": "node scripts/gen-secrets.mjs",
+    "n8n:up": "docker compose --env-file .env -f n8n/docker-compose.yml up -d",
+    "n8n:down": "docker compose --env-file .env -f n8n/docker-compose.yml down",
+    "n8n:logs": "docker compose --env-file .env -f n8n/docker-compose.yml logs -f n8n",
+    "n8n:import": "node scripts/import-workflow.mjs",
+    "web:dev": "npm --prefix web run dev",
+    "web:build": "npm --prefix web run build",
+    "setup": "npm run gen:secrets && npm --prefix web install && npm run n8n:up"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

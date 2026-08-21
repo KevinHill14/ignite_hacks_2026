@@ -1,0 +1,83 @@
+# Render blueprint: https://render.com/docs/blueprint-spec
+#
+# Two services. The web app is public; n8n is private and holds every
+# credential. They talk over Render's internal network, so the pipeline
+# webhook is never exposed to the internet.
+
+services:
+  # --------------------------------------------------------------- web app --
+  - type: web
+    name: syllabus-web
+    runtime: node
+    plan: starter
+    rootDir: web
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      # Internal address — resolves only inside Render's private network.
+      - key: N8N_WEBHOOK_URL
+        value: http://syllabus-n8n:5678/webhook/syllabus-ingest
+      # Shared secret. Generated once by Render, then copied into the n8n
+      # header-auth credential by hand (n8n stores it encrypted).
+      - key: INGEST_TOKEN
+        generateValue: true
+      - key: MAX_UPLOAD_MB
+        value: "10"
+      # Optional: enables the spoken briefing. Leave unset to hide the button.
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_VOICE_ID
+        sync: false
+
+  # ------------------------------------------------------------------ n8n --
+  - type: pserv # private service: no public URL, no inbound internet traffic
+    name: syllabus-n8n
+    runtime: image
+    plan: starter
+    image:
+      url: docker.n8n.io/n8nio/n8n:latest
+    disk:
+      name: n8n-data
+      mountPath: /home/node/.n8n
+      sizeGB: 5
+    envVars:
+      # Encrypts the Google and Anthropic credentials at rest on the disk.
+      # Generated once and never rotated — rotating it orphans every stored
+      # credential.
+      - key: N8N_ENCRYPTION_KEY
+        generateValue: true
+      - key: N8N_PORT
+        value: "5678"
+      - key: GENERIC_TIMEZONE
+        value: America/Toronto
+      - key: TZ
+        value: America/Toronto
+      # Hardening, mirroring n8n/docker-compose.yml.
+      - key: NODE_FUNCTION_ALLOW_EXTERNAL
+        value: ""
+      - key: N8N_DIAGNOSTICS_ENABLED
+        value: "false"
+      - key: N8N_VERSION_NOTIFICATIONS_ENABLED
+        value: "false"
+      - key: N8N_TEMPLATES_ENABLED
+        value: "false"
+      - key: EXECUTIONS_DATA_PRUNE
+        value: "true"
+      - key: EXECUTIONS_DATA_MAX_AGE
+        value: "72"
+      - key: EXECUTIONS_DATA_SAVE_ON_SUCCESS
+        value: "none"
+      - key: N8N_PAYLOAD_SIZE_MAX
+        value: "24"
+      # Google OAuth callbacks must reach n8n. A private service has no public
+      # URL, so run the OAuth connect step locally, then restore the n8n volume
+      # here — or temporarily switch this to `type: web` to authorise, and
+      # switch it back. See docs/DEPLOY.md.
+      - key: WEBHOOK_URL
+        sync: false

@@ -1,0 +1,41 @@
+# --- Secrets: never commit -------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+client_secret*.json
+service-account*.json
+credentials.json
+token.json
+
+# --- Uploads / scratch -----------------------------------------------------
+uploads/
+tmp/
+*.pdf
+*.docx
+!docs/samples/*.pdf
+
+# --- Node ------------------------------------------------------------------
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# --- n8n -------------------------------------------------------------------
+n8n/.n8n/
+n8n/data/
+
+# --- OS / editor -----------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

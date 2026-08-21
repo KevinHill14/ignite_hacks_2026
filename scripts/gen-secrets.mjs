@@ -1,0 +1,64 @@
+#!/usr/bin/env node
+/**
+ * Generates the two secrets this project needs and writes them into `.env`,
+ * creating it from `.env.example` on first run.
+ *
+ * Existing non-empty values are never overwritten — regenerating
+ * N8N_ENCRYPTION_KEY after credentials are saved would make every stored
+ * Google/Anthropic credential permanently undecryptable.
+ */
+import { randomBytes } from "node:crypto";
+import { existsSync, readFileSync, writeFileSync, chmodSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const envPath = join(root, ".env");
+const examplePath = join(root, ".env.example");
+
+if (!existsSync(envPath)) {
+  if (!existsSync(examplePath)) {
+    console.error("Missing .env.example — cannot bootstrap .env");
+    process.exit(1);
+  }
+  writeFileSync(envPath, readFileSync(examplePath, "utf8"), { mode: 0o600 });
+  console.log("Created .env from .env.example");
+}
+
+let env = readFileSync(envPath, "utf8");
+
+/** Fill `KEY=` only when it is currently empty. Returns true if it wrote. */
+function fillIfEmpty(key, value) {
+  const line = new RegExp(`^${key}=(.*)$`, "m");
+  const match = env.match(line);
+
+  if (!match) {
+    env += `${env.endsWith("\n") ? "" : "\n"}${key}=${value}\n`;
+    return true;
+  }
+  if (match[1].trim() !== "") {
+    console.log(`  ${key} already set — left untouched`);
+    return false;
+  }
+  env = env.replace(line, `${key}=${value}`);
+  return true;
+}
+
+const wrote = [
+  fillIfEmpty("N8N_ENCRYPTION_KEY", randomBytes(32).toString("base64")),
+  fillIfEmpty("INGEST_TOKEN", randomBytes(32).toString("hex")),
+].some(Boolean);
+
+if (wrote) {
+  writeFileSync(envPath, env, { mode: 0o600 });
+  console.log("Wrote secrets to .env");
+}
+
+// Best-effort permission tightening. A no-op on Windows, where ACLs govern.
+try {
+  chmodSync(envPath, 0o600);
+} catch {
+  /* non-POSIX filesystem */
+}
+
+console.log("\nDone. `.env` is gitignored — do not commit it.");

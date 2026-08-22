@@ -40,7 +40,15 @@ services:
     disk:
       name: n8n-data
       mountPath: /home/node/.n8n
-      sizeGB: 5
+      # 1 GB is the minimum and still ~600x what this needs: the n8n SQLite
+      # database is about 1.5 MB, holding a handful of credentials and one
+      # workflow. Execution data is pruned after 72 hours and not kept on
+      # success at all, so it does not grow.
+      #
+      # Worth getting right before the first deploy — Render disks can be
+      # expanded later but never shrunk, so over-provisioning here is a
+      # permanent line on the bill.
+      sizeGB: 1
     envVars:
       # Encrypts the Google and Anthropic credentials at rest on the disk.
       # Generated once and never rotated — rotating it orphans every stored

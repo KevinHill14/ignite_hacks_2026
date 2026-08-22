@@ -100,16 +100,27 @@ Then, in the n8n UI at `http://localhost:5678`:
 
 1. Create your owner account (local only).
 2. **Import** `n8n/syllabus-to-calendar.workflow.json`.
-3. Add three credentials:
-   - **Anthropic** — your API key.
-   - **Google Calendar OAuth2** and **Google Drive OAuth2** — see
-     [docs/DEPLOY.md](docs/DEPLOY.md) for the Google Cloud setup.
-   - **Header Auth** named `Ingest Token`, header `X-Ingest-Token`, value =
-     the `INGEST_TOKEN` from your `.env`.
-4. Point the Drive trigger at a folder, and the Calendar node at a calendar.
-   Use a *throwaway* calendar first — a bad extraction then pollutes something
-   disposable instead of your real schedule.
-5. **Activate** the workflow.
+3. Add the two credentials the upload path needs:
+   - **Anthropic** — your API key, on the *Claude: Extract Schedule + Costs*
+     node.
+   - **Header Auth** — on the *Webhook: Manual Upload* node. Header name
+     `X-Ingest-Token`, value = the `INGEST_TOKEN` from your `.env`. These two
+     must match exactly or every upload returns 401.
+4. **Activate** the workflow with the toggle in the top-right.
+
+   Until it's Active, n8n serves only a one-shot *test* URL and the app gets a
+   404 — that's the "pipeline is not listening" error.
+
+5. *Optional:* add **Google Calendar OAuth2** and point it at a **throwaway
+   calendar** — a bad extraction then pollutes something disposable instead of
+   your real schedule. Without it the pipeline still runs and still returns the
+   full cost breakdown; only the calendar writes are reported as failed.
+6. *Optional:* add **Google Drive OAuth2**, set the folder on the
+   *Drive: New Syllabus Dropped* node, then **enable** that node — it ships
+   disabled, because n8n refuses to activate a workflow whose trigger has no
+   credential, which would block the upload path too.
+
+See [docs/DEPLOY.md](docs/DEPLOY.md) for the Google Cloud setup.
 
 Finally:
 

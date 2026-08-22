@@ -53,13 +53,14 @@
       "type": "n8n-nodes-base.googleDriveTrigger",
       "typeVersion": 1,
       "position": [-560, 320],
+      "disabled": true,
       "credentials": {
         "googleDriveOAuth2Api": {
           "id": "GOOGLE_DRIVE_OAUTH",
           "name": "Google Drive account"
         }
       },
-      "notes": "Entry point B — the zero-effort path. Watches one Drive folder; dropping a syllabus in it runs the whole pipeline with no UI interaction at all."
+      "notes": "Entry point B — the zero-effort path. Watches one Drive folder; dropping a syllabus in it runs the whole pipeline with no UI interaction at all. Ships DISABLED because n8n refuses to activate a workflow whose trigger has no credential — that would block the upload path too. Connect Google Drive, set the folder, then enable this node."
     },
     {
       "parameters": {

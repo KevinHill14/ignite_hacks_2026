@@ -11,7 +11,12 @@ services:
     runtime: node
     plan: starter
     rootDir: web
-    buildCommand: npm ci && npm run build
+    # --include=dev is required, not optional. NODE_ENV=production below makes
+    # npm skip devDependencies, but the BUILD needs them — Tailwind, PostCSS
+    # and TypeScript all live there. Without it the build dies on
+    # "Cannot find module '@tailwindcss/postcss'". NODE_ENV still applies at
+    # runtime, which is where it actually belongs.
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run start
     healthCheckPath: /
     autoDeploy: true

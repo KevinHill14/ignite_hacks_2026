@@ -1373,6 +1373,56 @@ select.field__input {
   border-bottom: 1px dotted var(--rule-strong);
 }
 
+/* --- password gate --------------------------------------------------------- */
+
+.gate {
+  padding-top: 12vh;
+  max-width: 620px;
+}
+
+.gate__title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2.2rem, 6vw, 3.4rem);
+  line-height: 0.96;
+  letter-spacing: -0.03em;
+  margin: 28px 0 0;
+}
+
+.gate__title em {
+  font-style: normal;
+  color: var(--stamp);
+  white-space: nowrap;
+}
+
+.gate__lede {
+  font-size: 1.02rem;
+  color: var(--ink-soft);
+  max-width: 46ch;
+  margin: 18px 0 32px;
+}
+
+.gate__form {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.gate__form .field {
+  flex: 1 1 240px;
+  margin-bottom: 0;
+}
+
+.gate__form .btn {
+  padding: 12px 22px;
+}
+
+.gate__form .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* --- timeline detail on click ---------------------------------------------- */
 
 .spine__hit {

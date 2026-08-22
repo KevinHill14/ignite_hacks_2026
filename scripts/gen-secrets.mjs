@@ -77,6 +77,9 @@ const webKeys = [
   "N8N_WEBHOOK_URL",
   "INGEST_TOKEN",
   "MAX_UPLOAD_MB",
+  "APP_PASSWORD",
+  "RATE_LIMIT_PER_MINUTE",
+  "RATE_LIMIT_PER_DAY",
 ];
 
 const webEnv = [

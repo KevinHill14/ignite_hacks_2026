@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { IngestResponse } from "@/lib/types";
+import { clientKey, rateLimit } from "@/lib/rate-limit";
 
 /**
  * Server-side proxy between the browser and the n8n pipeline.
@@ -30,6 +31,47 @@ function fail(message: string, status: number) {
 }
 
 export async function POST(request: NextRequest) {
+  /*
+   * Rate limit before anything else, and certainly before reading the body —
+   * a limiter that first buffers a 10 MB upload still lets an attacker cost
+   * you bandwidth and memory.
+   *
+   * The defaults suit a demo: a handful of uploads a minute is far more than
+   * a person needs and far less than a stuck refresh loop would manage. The
+   * daily cap is the real budget guard.
+   */
+  const key = clientKey(request.headers);
+  const perMinute = rateLimit(`${key}:min`, {
+    limit: Number(process.env.RATE_LIMIT_PER_MINUTE) || 3,
+    windowMs: 60_000,
+  });
+  const perDay = rateLimit(`${key}:day`, {
+    limit: Number(process.env.RATE_LIMIT_PER_DAY) || 25,
+    windowMs: 24 * 60 * 60 * 1000,
+  });
+
+  const blocked = !perMinute.allowed ? perMinute : !perDay.allowed ? perDay : null;
+  if (blocked) {
+    const minutes = Math.ceil(blocked.retryAfter / 60);
+    return NextResponse.json<IngestResponse>(
+      {
+        ok: false,
+        error:
+          blocked === perMinute
+            ? `That's ${blocked.limit} uploads in a minute. Wait ${blocked.retryAfter}s and try again.`
+            : `You've used today's ${blocked.limit} uploads. Each one is a real API call, so there's a daily cap. Try again in ${minutes > 60 ? `${Math.ceil(minutes / 60)}h` : `${minutes}m`}.`,
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(blocked.retryAfter),
+          "X-RateLimit-Limit": String(blocked.limit),
+          "X-RateLimit-Remaining": "0",
+        },
+      },
+    );
+  }
+
   let webhookUrl: string;
   let ingestToken: string;
 

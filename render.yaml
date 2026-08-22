@@ -87,6 +87,24 @@ services:
         generateValue: true
       - key: N8N_PORT
         value: "5678"
+      # NOT OPTIONAL on the starter plan. Node sizes its old-space heap from
+      # the container, and in a 512 MB cgroup it picks ~256 MB — which n8n
+      # exhausts while still booting:
+      #   FATAL ERROR: Ineffective mark-compacts near heap limit
+      #   Exited with status 134
+      # That is a crash loop, and a crash-looping web service never gets a
+      # public URL, so the symptom looks like "Render didn't give me a URL"
+      # rather than "out of memory". 384 leaves ~128 MB for the runtime.
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=384
+      # Task runners execute Code nodes in a separate sandboxed process, with
+      # a broker process in front of it. That is the right call on a real
+      # host and pure overhead here: our two Code nodes do array mapping and
+      # date maths, nothing worth isolating, and the runner also tries to
+      # start a Python runtime that this image does not ship. Off, they run
+      # in-process and the boot footprint drops.
+      - key: N8N_RUNNERS_ENABLED
+        value: "false"
       - key: GENERIC_TIMEZONE
         value: America/Toronto
       - key: TZ
@@ -120,8 +138,12 @@ services:
         value: "72"
       - key: EXECUTIONS_DATA_SAVE_ON_SUCCESS
         value: "none"
+      # 24 was generous headroom on a laptop; on a 512 MB box it is a licence
+      # to OOM mid-request. The web app caps uploads at MAX_UPLOAD_MB=10, and
+      # base64 inflates that to ~13.4 MB on the wire, so 16 still clears the
+      # largest request the app can actually send.
       - key: N8N_PAYLOAD_SIZE_MAX
-        value: "24"
+        value: "16"
       # WEBHOOK_URL is deliberately NOT set here. It only affects the URLs n8n
       # advertises for its own webhooks, and nothing depends on those: the web
       # app reaches n8n by internal service name, and the Drive trigger ships

@@ -8,6 +8,7 @@ import type {
   PlannedEvent,
 } from "@/lib/types";
 import { DEMO_RESULT } from "@/lib/demo";
+import { buildIcs } from "@/lib/ics";
 
 /* ---------------------------------------------------------------- helpers */
 
@@ -243,6 +244,55 @@ function TermSpine({ events, costs }: { events: PlannedEvent[]; costs: PlannedCo
         );
       })}
     </svg>
+  );
+}
+
+/* ------------------------------------------------------- calendar download */
+
+/**
+ * Hands the user a .ics file.
+ *
+ * This is the path that works for everyone. The Google integration needs a
+ * verified OAuth app; until Google approves one, it only works for a
+ * hand-maintained allowlist of test users. A downloaded calendar file has no
+ * such gate and imports into Google, Apple, and Outlook alike.
+ *
+ * Built in the browser from data already on the page, so nothing is uploaded
+ * and no round trip is needed.
+ */
+function DownloadCalendarButton({ result }: { result: IngestResult }) {
+  const [done, setDone] = useState(false);
+
+  function download() {
+    const ics = buildIcs({
+      events: result.events,
+      costs: result.costs,
+      courseCode: result.course.code,
+      courseTitle: result.course.title,
+      timezone: result.timezone,
+    });
+
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(result.course.code || "syllabus").replace(/[^\w-]+/g, "-")}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Revoke on the next tick; revoking immediately can cancel the download.
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    setDone(true);
+    setTimeout(() => setDone(false), 4000);
+  }
+
+  const count = result.events.length + result.costs.filter((c) => c.neededBy).length;
+
+  return (
+    <button className="btn" onClick={download} disabled={count === 0}>
+      {done ? "Downloaded — open it to import" : `Add ${count} to my calendar`}
+    </button>
   );
 }
 
@@ -921,6 +971,7 @@ function Results({
         <button className="btn" onClick={onReset}>
           Import another syllabus
         </button>
+        <DownloadCalendarButton result={result} />
         <BriefingButton result={result} />
       </div>
     </div>

@@ -279,10 +279,15 @@ export function MergedResults({
           </div>
         )}
         {merged.duplicates.length > 0 && (
+          /*
+            Name the actual item when there is only one. "Shared items are
+            counted for each course" is abstract; "the iClicker counts for
+            both" is a thing the reader can picture and check.
+          */
           <p className="breakdown__note">
-            Per-course figures include items shared between courses, so they add
-            up to more than the term total. The total counts each shared item
-            once.
+            {merged.duplicates.length === 1
+              ? `${merged.duplicates[0].label} counts toward both courses above, but only once in the total.`
+              : "Shared items count toward each course above, but only once in the total."}
           </p>
         )}
       </section>

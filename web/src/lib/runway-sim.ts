@@ -27,16 +27,35 @@ export interface SpendLine {
 
 export interface SimConfig {
   startBalance: number;
+  /**
+   * Recurring income. Either a flat figure for every month, or a per-month
+   * map when pay frequency makes some months bigger than others.
+   */
   monthlyIncome: number;
+  incomeByMonth?: Record<string, number>;
   /** CV on income. 0 for salaried, ~0.25 for shift work. */
   incomeVolatility: number;
   spend: SpendLine[];
   /** Known, certain course costs keyed by "YYYY-MM". */
   courseCostByMonth: Record<string, number>;
+  /**
+   * One-off money: OSAP instalments, bursaries, scholarships. Anything with a
+   * probability below 1 is drawn per trial rather than assumed.
+   */
+  incomeEvents?: SimIncomeEvent[];
   /** Ordered "YYYY-MM" keys covering the term. */
   months: string[];
   trials?: number;
   seed?: number;
+}
+
+export interface SimIncomeEvent {
+  id: string;
+  label: string;
+  month: string;
+  amount: number;
+  /** 1 = certain. Below 1 draws a Bernoulli per trial. */
+  probability: number;
 }
 
 export interface MonthBand {
@@ -48,6 +67,9 @@ export interface MonthBand {
   p90: number;
   /** Certain course spend landing this month — drives the step in the chart. */
   courseCost: number;
+  /** Expected one-off income this month, probability-weighted. */
+  windfall: number;
+  windfallLabel: string | null;
 }
 
 export interface Lever {
@@ -161,12 +183,35 @@ function simulate(config: SimConfig, trials: number, seed: number): RawRun {
   const endBalances = new Array<number>(trials);
   let brokeCount = 0;
 
+  const events = config.incomeEvents ?? [];
+
   for (let t = 0; t < trials; t++) {
     let balance = startBalance;
     let wentBroke = false;
 
+    /*
+     * Resolve uncertain income once per trial, not once per month.
+     *
+     * A bursary you have applied for either comes through or it does not —
+     * re-rolling it every month would model a grant that flickers in and out
+     * of existence. Drawing here also keeps the random stream aligned across
+     * lever runs.
+     */
+    const eventLands = events.map((e) =>
+      e.probability >= 1 ? true : rand() < e.probability,
+    );
+
     for (let m = 0; m < months.length; m++) {
-      const income = lognormalFrom(standardNormal(rand), monthlyIncome, incomeVolatility);
+      const month = months[m];
+      const baseIncome = config.incomeByMonth?.[month] ?? monthlyIncome;
+      const income = lognormalFrom(standardNormal(rand), baseIncome, incomeVolatility);
+
+      // One-off money is certain in amount once it arrives, so it is added
+      // flat rather than given a spread of its own.
+      let windfall = 0;
+      for (let e = 0; e < events.length; e++) {
+        if (eventLands[e] && events[e].month === month) windfall += events[e].amount;
+      }
 
       let spent = 0;
       for (const line of everyLine) {
@@ -179,9 +224,9 @@ function simulate(config: SimConfig, trials: number, seed: number): RawRun {
 
       // Course costs are extracted from the syllabus: a known amount on a
       // known date. No draw, no variance — that certainty is the point.
-      const course = courseCostByMonth[months[m]] ?? 0;
+      const course = courseCostByMonth[month] ?? 0;
 
-      balance = balance + income - spent - course;
+      balance = balance + income + windfall - spent - course;
       balances[m][t] = balance;
       if (balance < 0) wentBroke = true;
     }
@@ -209,6 +254,7 @@ export function runForecast(config: SimConfig): SimResult {
 
   const bands: MonthBand[] = config.months.map((month, m) => {
     const sorted = [...run.balances[m]].sort((a, b) => a - b);
+    const arriving = (config.incomeEvents ?? []).filter((e) => e.month === month);
     return {
       month,
       p10: percentile(sorted, 0.1),
@@ -217,6 +263,10 @@ export function runForecast(config: SimConfig): SimResult {
       p75: percentile(sorted, 0.75),
       p90: percentile(sorted, 0.9),
       courseCost: config.courseCostByMonth[month] ?? 0,
+      windfall: arriving.reduce((s, e) => s + e.amount * e.probability, 0),
+      windfallLabel: arriving.length
+        ? arriving.map((e) => e.label).join(" + ")
+        : null,
     };
   });
 

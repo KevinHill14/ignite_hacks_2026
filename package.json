@@ -14,7 +14,8 @@
     "web:build": "npm --prefix web run build",
     "setup": "npm run gen:secrets && npm --prefix web install && npm run n8n:up && npm run n8n:setup",
     "check:ics": "node --experimental-strip-types scripts/check-ics.mjs",
-    "check:sim": "node --experimental-strip-types scripts/check-runway-sim.mjs"
+    "check:sim": "node --experimental-strip-types scripts/check-runway-sim.mjs",
+    "check:income": "node --experimental-strip-types scripts/check-income.mjs"
   },
   "engines": {
     "node": ">=20"

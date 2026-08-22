@@ -7,7 +7,18 @@ import {
   DEFAULT_SPEND,
   INCOME_STEADINESS,
   type SpendLine,
+  type SimIncomeEvent,
 } from "@/lib/runway-sim";
+import {
+  settleAid,
+  splitAcrossTerms,
+  settlementToEvents,
+  monthlyFromPay,
+  addMonths,
+  type AidSource,
+  type AidKind,
+  type PayFrequency,
+} from "@/lib/income";
 
 /* ------------------------------------------------------------------ helpers */
 
@@ -152,6 +163,38 @@ function FanChart({ bands, currency, startBalance }: FanProps) {
         />
       )}
 
+      {/* money arriving — ink, following the ledger convention where credits
+          are black and debits are red */}
+      {bands.map((b, i) =>
+        b.windfall > 0 ? (
+          <g key={`w-${b.month}`}>
+            <line
+              x1={x(i)}
+              y1={PAD.top}
+              x2={x(i)}
+              y2={PAD.top + plotH}
+              stroke="var(--ink)"
+              strokeWidth="1"
+              opacity="0.35"
+              strokeDasharray="3 3"
+            />
+            {/* Sits on its own row above the cost labels so the two never
+                collide, and clear of the zero line wherever that lands. */}
+            <text
+              x={x(i)}
+              y={PAD.top + 12}
+              textAnchor="middle"
+              fontFamily="var(--font-mono)"
+              fontSize="10.5"
+              fontWeight="600"
+              fill="var(--ink)"
+            >
+              +{money(b.windfall, currency)}
+            </text>
+          </g>
+        ) : null,
+      )}
+
       {/* where the known syllabus costs land */}
       {bands.map((b, i) =>
         b.courseCost > 0 ? (
@@ -167,7 +210,7 @@ function FanChart({ bands, currency, startBalance }: FanProps) {
             />
             <text
               x={x(i)}
-              y={PAD.top + 12}
+              y={PAD.top + 26}
               textAnchor="middle"
               fontFamily="var(--font-mono)"
               fontSize="10.5"
@@ -211,6 +254,156 @@ function FanChart({ bands, currency, startBalance }: FanProps) {
   );
 }
 
+/* --------------------------------------------------------------- aid panel */
+
+interface AidRow {
+  id: string;
+  label: string;
+  kind: AidKind;
+  amount: string;
+  startMonth: string;
+  splitTerms: boolean;
+  confirmed: boolean;
+  toAccount: boolean;
+}
+
+const AID_PRESETS: { kind: AidKind; label: string; splitTerms: boolean; toAccount: boolean }[] = [
+  { kind: "osap", label: "OSAP", splitTerms: true, toAccount: true },
+  { kind: "scholarship", label: "Entrance scholarship", splitTerms: true, toAccount: true },
+  { kind: "bursary", label: "Bursary", splitTerms: false, toAccount: true },
+];
+
+function AidPanel({
+  tuition,
+  setTuition,
+  rows,
+  setRows,
+  monthOptions,
+  defaultMonth,
+}: {
+  tuition: string;
+  setTuition: (v: string) => void;
+  rows: AidRow[];
+  setRows: React.Dispatch<React.SetStateAction<AidRow[]>>;
+  monthOptions: string[];
+  /** Term start. Earlier months are offered but are the wrong default. */
+  defaultMonth: string;
+}) {
+  const update = (id: string, patch: Partial<AidRow>) =>
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+
+  return (
+    <div className="aid">
+      <span className="field__label">Financial aid</span>
+
+      <label className="field" style={{ marginTop: 6 }}>
+        <span className="field__label">Tuition and fees you owe the school</span>
+        <input
+          className="field__input"
+          inputMode="decimal"
+          placeholder="9100"
+          value={tuition}
+          onChange={(e) => setTuition(e.target.value.replace(/[^\d.]/g, ""))}
+        />
+      </label>
+
+      {rows.map((row) => (
+        <div className="aid__row" key={row.id}>
+          <div className="aid__head">
+            <input
+              className="aid__label"
+              value={row.label}
+              aria-label="Award name"
+              onChange={(e) => update(row.id, { label: e.target.value })}
+            />
+            <button
+              className="aid__remove"
+              aria-label={`Remove ${row.label}`}
+              onClick={() => setRows((prev) => prev.filter((r) => r.id !== row.id))}
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="aid__fields">
+            <label>
+              <span>Total</span>
+              <input
+                inputMode="decimal"
+                value={row.amount}
+                onChange={(e) => update(row.id, { amount: e.target.value.replace(/[^\d.]/g, "") })}
+              />
+            </label>
+            <label>
+              <span>First paid</span>
+              <select
+                value={row.startMonth}
+                onChange={(e) => update(row.id, { startMonth: e.target.value })}
+              >
+                {monthOptions.map((m) => (
+                  <option key={m} value={m}>
+                    {monthLabel(m, true)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="aid__toggles">
+            <label>
+              <input
+                type="checkbox"
+                checked={row.splitTerms}
+                onChange={() => update(row.id, { splitTerms: !row.splitTerms })}
+              />
+              Split over two terms
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={row.confirmed}
+                onChange={() => update(row.id, { confirmed: !row.confirmed })}
+              />
+              Confirmed
+            </label>
+          </div>
+          {!row.confirmed && (
+            <p className="aid__note">
+              Treated as a 50/50 chance, so the forecast shows both outcomes.
+            </p>
+          )}
+        </div>
+      ))}
+
+      <div className="aid__add">
+        {AID_PRESETS.map((p) => (
+          <button
+            key={p.kind}
+            className="chip"
+            onClick={() =>
+              setRows((prev) => [
+                ...prev,
+                {
+                  id: `${p.kind}-${Date.now()}`,
+                  label: p.label,
+                  kind: p.kind,
+                  amount: "",
+                  startMonth: defaultMonth,
+                  splitTerms: p.splitTerms,
+                  confirmed: true,
+                  toAccount: p.toAccount,
+                },
+              ])
+            }
+          >
+            + {p.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------ the component */
 
 export function RunwayForecast({
@@ -224,12 +417,67 @@ export function RunwayForecast({
 }) {
   const [balance, setBalance] = useState("");
   const [income, setIncome] = useState("");
+  const [payFrequency, setPayFrequency] = useState<PayFrequency>("monthly");
   const [steadiness, setSteadiness] = useState<string>("shifts");
   const [spend, setSpend] = useState<SpendLine[]>(() => DEFAULT_SPEND.map((s) => ({ ...s })));
+  const [tuition, setTuition] = useState("");
+  const [aidRows, setAidRows] = useState<AidRow[]>([]);
+
+  // The term window, derived from whatever the syllabus produced.
+  const months = useMemo(() => {
+    const dates = [
+      ...costs.filter((c) => c.neededBy).map((c) => c.neededBy as string),
+      ...events.map((e) => e.date),
+    ].sort();
+    if (dates.length === 0) return [];
+
+    const out: string[] = [];
+    const cursor = new Date(`${dates[0]}T12:00:00`);
+    cursor.setDate(1);
+    const stop = new Date(`${dates[dates.length - 1]}T12:00:00`);
+    stop.setDate(1);
+    for (let i = 0; i < 18 && cursor <= stop; i++) {
+      out.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`);
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+    return out;
+  }, [costs, events]);
+
+  // Aid can be paid before the term starts, so offer a few earlier months too.
+  const monthOptions = useMemo(() => {
+    if (months.length === 0) return [];
+    return [addMonths(months[0], -4), addMonths(months[0], -3), addMonths(months[0], -2),
+            addMonths(months[0], -1), ...months, addMonths(months[months.length - 1], 1)];
+  }, [months]);
+
+  /** Every award, expanded into instalments and run through the account. */
+  const settlement = useMemo(() => {
+    const sources: AidSource[] = [];
+    for (const row of aidRows) {
+      const total = Number(row.amount);
+      if (!Number.isFinite(total) || total <= 0) continue;
+      sources.push(
+        ...splitAcrossTerms(
+          {
+            id: row.id,
+            label: row.label,
+            kind: row.kind,
+            toAccount: row.toAccount,
+            probability: row.confirmed ? 1 : 0.5,
+          },
+          total,
+          row.startMonth,
+          row.splitTerms ? 2 : 1,
+        ),
+      );
+    }
+    if (sources.length === 0) return null;
+    return settleAid(sources, Number(tuition) || 0);
+  }, [aidRows, tuition]);
 
   const forecast = useMemo(() => {
     const start = Number(balance);
-    if (!balance.trim() || !Number.isFinite(start)) return null;
+    if (!balance.trim() || !Number.isFinite(start) || months.length === 0) return null;
 
     const courseCostByMonth: Record<string, number> = {};
     for (const c of costs) {
@@ -238,33 +486,30 @@ export function RunwayForecast({
       courseCostByMonth[key] = (courseCostByMonth[key] ?? 0) + c.amount;
     }
 
-    const dates = [
-      ...costs.filter((c) => c.neededBy).map((c) => c.neededBy as string),
-      ...events.map((e) => e.date),
-    ].sort();
-    if (dates.length === 0) return null;
-
-    const months: string[] = [];
-    const cursor = new Date(`${dates[0]}T12:00:00`);
-    cursor.setDate(1);
-    const stop = new Date(`${dates[dates.length - 1]}T12:00:00`);
-    stop.setDate(1);
-    for (let i = 0; i < 18 && cursor <= stop; i++) {
-      months.push(`${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`);
-      cursor.setMonth(cursor.getMonth() + 1);
+    const perCheque = Number(income) || 0;
+    const incomeByMonth: Record<string, number> = {};
+    for (const m of months) {
+      incomeByMonth[m] = monthlyFromPay(m, perCheque, payFrequency, `${months[0]}-01`);
     }
-    if (months.length === 0) return null;
+
+    // Only money refunded during the term counts as income here. Anything paid
+    // out before the window is already sitting in the balance they typed.
+    const incomeEvents: SimIncomeEvent[] = settlement
+      ? settlementToEvents(settlement).filter((e) => months.includes(e.month))
+      : [];
 
     return runForecast({
       startBalance: start,
-      monthlyIncome: Number(income) || 0,
+      monthlyIncome: perCheque,
+      incomeByMonth,
       incomeVolatility:
         INCOME_STEADINESS.find((s) => s.id === steadiness)?.volatility ?? 0.25,
       spend,
       courseCostByMonth,
+      incomeEvents,
       months,
     });
-  }, [balance, income, steadiness, spend, costs, events]);
+  }, [balance, income, payFrequency, steadiness, spend, costs, months, settlement]);
 
   const risk = forecast ? Math.round(forecast.probBroke * 100) : 0;
   const riskTone = risk >= 50 ? "is-high" : risk >= 15 ? "is-medium" : "is-low";
@@ -297,7 +542,9 @@ export function RunwayForecast({
           </label>
 
           <label className="field">
-            <span className="field__label">Income per month</span>
+            <span className="field__label">
+              {payFrequency === "monthly" ? "Income per month" : "Income per paycheque"}
+            </span>
             <input
               className="field__input"
               inputMode="decimal"
@@ -306,6 +553,25 @@ export function RunwayForecast({
               onChange={(e) => setIncome(e.target.value.replace(/[^\d.]/g, ""))}
             />
           </label>
+
+          <label className="field">
+            <span className="field__label">Paid how often?</span>
+            <select
+              className="field__input"
+              value={payFrequency}
+              onChange={(e) => setPayFrequency(e.target.value as PayFrequency)}
+            >
+              <option value="monthly">Monthly</option>
+              <option value="biweekly">Every two weeks</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </label>
+          {payFrequency === "biweekly" && (
+            <p className="field__hint">
+              Two months a year carry three paycheques instead of two. Rent
+              does not care, so those are modelled as real spikes.
+            </p>
+          )}
 
           <label className="field">
             <span className="field__label">How steady is it?</span>
@@ -359,6 +625,17 @@ export function RunwayForecast({
               </div>
             ))}
           </div>
+
+          {monthOptions.length > 0 && (
+            <AidPanel
+              tuition={tuition}
+              setTuition={setTuition}
+              rows={aidRows}
+              setRows={setAidRows}
+              monthOptions={monthOptions}
+              defaultMonth={months[0]}
+            />
+          )}
         </div>
 
         <div>
@@ -405,11 +682,83 @@ export function RunwayForecast({
                 </div>
               </div>
 
+              {settlement && settlement.gross > 0 && (
+                <div className="aid-reveal">
+                  <p className="total__label">Where your aid actually goes</p>
+                  <div className="aid-reveal__flow">
+                    <div>
+                      <span className="aid-reveal__num">{money(settlement.gross, currency)}</span>
+                      <span className="aid-reveal__cap">on paper</span>
+                    </div>
+                    <span className="aid-reveal__arrow">→</span>
+                    <div>
+                      <span className="aid-reveal__num is-out">
+                        −{money(settlement.toSchool, currency)}
+                      </span>
+                      <span className="aid-reveal__cap">
+                        straight to the school ({Math.round(settlement.withheldShare * 100)}%)
+                      </span>
+                    </div>
+                    <span className="aid-reveal__arrow">→</span>
+                    <div>
+                      <span className="aid-reveal__num is-in">
+                        {money(settlement.toStudent, currency)}
+                      </span>
+                      <span className="aid-reveal__cap">reaches your bank</span>
+                    </div>
+                  </div>
+
+                  <table className="aid-reveal__table">
+                    <tbody>
+                      {settlement.ledger.map((l, i) => (
+                        <tr key={`${l.source.id}-${i}`}>
+                          <td>{monthLabel(l.source.month, true)}</td>
+                          <td className="is-name">{l.source.label}</td>
+                          <td>{money(l.source.amount, currency)}</td>
+                          <td className="is-out">
+                            {l.toSchool > 0 ? `−${money(l.toSchool, currency)}` : "—"}
+                          </td>
+                          <td className="is-in">
+                            {l.toStudent > 0 ? money(l.toStudent, currency) : "nothing"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {settlement.stillOwed > 0 && (
+                    <p className="aid-reveal__warn">
+                      Your aid does not cover tuition — {money(settlement.stillOwed, currency)} is
+                      still owed to the school and is not counted as a cost above.
+                    </p>
+                  )}
+                  {(() => {
+                    const outside = settlement.ledger.filter(
+                      (l) => l.toStudent > 0 && !months.includes(l.source.month),
+                    );
+                    if (outside.length === 0) return null;
+                    const total = outside.reduce((s, l) => s + l.toStudent, 0);
+                    const early = outside.every((l) => l.source.month < months[0]);
+                    return (
+                      <p className="aid-reveal__warn">
+                        {money(total, currency)} of this lands{" "}
+                        {early ? "before your term starts" : "outside your term window"}
+                        , so it is not counted as income in the forecast.{" "}
+                        {early
+                          ? "It should already be part of the balance you entered."
+                          : "It arrives after the last date on your syllabus."}
+                      </p>
+                    );
+                  })()}
+                </div>
+              )}
+
               <div className="fan__wrap">
                 <div className="fan__legend">
                   <span><i className="k-band" /> middle 80% of outcomes</span>
                   <span><i className="k-mid" /> most likely path</span>
                   <span><i className="k-shock" /> known course cost</span>
+                  <span><i className="k-in" /> money arriving</span>
                 </div>
                 <FanChart
                   bands={forecast.bands}

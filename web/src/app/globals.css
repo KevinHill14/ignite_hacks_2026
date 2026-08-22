@@ -1097,6 +1097,249 @@ select.field__input {
   text-align: right;
 }
 
+/* ===========================================================================
+   Financial aid. Ink means money arriving, stamp red means money leaving —
+   the ledger convention where credits are black and debits are red.
+   =========================================================================== */
+
+.field__hint {
+  margin: -8px 0 16px;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  line-height: 1.45;
+}
+
+.fan__legend .k-in {
+  width: 2px;
+  height: 12px;
+  background: var(--ink);
+}
+
+.aid {
+  border-top: 1px solid var(--rule);
+  margin-top: 24px;
+  padding-top: 16px;
+}
+
+.aid__row {
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.aid__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.aid__label {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  padding: 3px 0;
+}
+
+.aid__label:focus {
+  border-bottom-color: var(--violet);
+  outline: none;
+}
+
+.aid__remove {
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.aid__remove:hover {
+  color: var(--stamp);
+}
+
+.aid__fields {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 9px;
+}
+
+.aid__fields label {
+  display: grid;
+  gap: 3px;
+}
+
+.aid__fields span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.aid__fields input,
+.aid__fields select {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 6px 8px;
+  border: 1px solid var(--rule);
+  background: var(--paper-panel);
+  color: var(--ink);
+  width: 100%;
+}
+
+.aid__toggles {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+}
+
+.aid__toggles label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.aid__toggles input {
+  accent-color: var(--violet);
+}
+
+.aid__note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.aid__add {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.chip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 6px 10px;
+  border: 1px dashed var(--rule-strong);
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-style: solid;
+  border-color: var(--violet);
+  color: var(--violet);
+}
+
+/* --- the reveal ------------------------------------------------------------ */
+
+.aid-reveal {
+  border: 2px solid var(--ink);
+  background: var(--paper-panel);
+  padding: 20px;
+  margin-bottom: 22px;
+}
+
+.aid-reveal__flow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 10px 0 16px;
+}
+
+.aid-reveal__flow > div {
+  display: grid;
+  gap: 2px;
+}
+
+.aid-reveal__num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.3rem, 3vw, 1.9rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.aid-reveal__num.is-out {
+  color: var(--stamp);
+}
+
+.aid-reveal__num.is-in {
+  color: var(--ink);
+}
+
+.aid-reveal__cap {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.aid-reveal__arrow {
+  color: var(--rule-strong);
+  font-size: 20px;
+}
+
+.aid-reveal__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.aid-reveal__table td {
+  padding: 7px 8px;
+  border-top: 1px solid var(--rule);
+  text-align: right;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.aid-reveal__table td:first-child,
+.aid-reveal__table td.is-name {
+  text-align: left;
+}
+
+.aid-reveal__table td.is-name {
+  font-family: var(--font-body);
+  color: var(--ink);
+  white-space: normal;
+}
+
+.aid-reveal__table td.is-out {
+  color: var(--stamp);
+}
+
+.aid-reveal__table td.is-in {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.aid-reveal__warn {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--stamp);
+  border-left: 3px solid var(--stamp);
+  padding-left: 11px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

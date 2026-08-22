@@ -1,5 +1,10 @@
 # Deploying
 
+> Setting Google up for the first time, or getting teammates connected?
+> [docs/GOOGLE-OAUTH.md](GOOGLE-OAUTH.md) walks the whole thing step by step,
+> including the test-user list and the 7-day token expiry. The section below
+> is the condensed version.
+
 ## Google Cloud setup (needed either way)
 
 1. Create a project at <https://console.cloud.google.com>.

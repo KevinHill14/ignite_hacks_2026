@@ -19,6 +19,9 @@ tmp/
 *.docx
 !syllabus_examples/**/*.pdf
 !syllabus_examples/**/*.docx
+# The demo set the judging run uses. Without these committed, a fresh clone
+# cannot reproduce `npm run test:demo-set`.
+!demo_syllabi_corpus/**/*.pdf
 
 # --- Node ------------------------------------------------------------------
 node_modules/

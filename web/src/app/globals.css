@@ -1248,10 +1248,17 @@ select.field__input {
   cursor: pointer;
 }
 
-.chip:hover {
+.chip:hover:not(:disabled) {
   border-style: solid;
   border-color: var(--violet);
   color: var(--violet);
+}
+
+/* Already added and only allowed once — OSAP. */
+.chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-style: solid;
 }
 
 /* --- the reveal ------------------------------------------------------------ */

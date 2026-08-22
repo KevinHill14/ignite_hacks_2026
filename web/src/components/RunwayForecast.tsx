@@ -267,8 +267,19 @@ interface AidRow {
   toAccount: boolean;
 }
 
-const AID_PRESETS: { kind: AidKind; label: string; splitTerms: boolean; toAccount: boolean }[] = [
-  { kind: "osap", label: "OSAP", splitTerms: true, toAccount: true },
+const AID_PRESETS: {
+  kind: AidKind;
+  label: string;
+  splitTerms: boolean;
+  toAccount: boolean;
+  /**
+   * You receive one OSAP assessment per study period, so a second row would
+   * be double-counting the same money. Scholarships and bursaries genuinely
+   * stack, so those stay repeatable.
+   */
+  unique?: boolean;
+}[] = [
+  { kind: "osap", label: "OSAP", splitTerms: true, toAccount: true, unique: true },
   { kind: "scholarship", label: "Entrance scholarship", splitTerms: true, toAccount: true },
   { kind: "bursary", label: "Bursary", splitTerms: false, toAccount: true },
 ];
@@ -376,10 +387,18 @@ function AidPanel({
       ))}
 
       <div className="aid__add">
-        {AID_PRESETS.map((p) => (
+        {AID_PRESETS.map((p) => {
+          const alreadyAdded = p.unique && rows.some((r) => r.kind === p.kind);
+          return (
           <button
             key={p.kind}
             className="chip"
+            disabled={alreadyAdded}
+            title={
+              alreadyAdded
+                ? "You only get one OSAP assessment per study period. Edit the existing entry instead."
+                : undefined
+            }
             onClick={() =>
               setRows((prev) => [
                 ...prev,
@@ -398,7 +417,8 @@ function AidPanel({
           >
             + {p.label}
           </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

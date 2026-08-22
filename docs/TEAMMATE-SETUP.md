@@ -9,7 +9,7 @@ here is hard; it is mostly waiting for things to install.
 
 Probably not. Find yourself below.
 
-| What you're working on | Need a key? | What to read |
+| What you're working on | Need the pipeline? | What to read |
 |---|---|---|
 | Design, UI, mobile, accessibility | **No** | [Path A](#path-a--no-key-needed) |
 | Pitch deck, demo video, docs | **No** | [Path A](#path-a--no-key-needed) |
@@ -17,6 +17,9 @@ Probably not. Find yourself below.
 | Rate limiting, password gate | **No** | [Path A](#path-a--no-key-needed) |
 | The extraction pipeline itself | **Yes** | [Path B](#path-b--youre-working-on-extraction) |
 | OCR for scanned PDFs | **Yes** | [Path B](#path-b--youre-working-on-extraction) |
+
+Path A is three commands and needs no Docker, no Google account, and no API
+key. Take it if you can — it's faster to work against and costs nothing.
 
 The app has a **"See a worked example"** button that renders the entire
 product — the timeline, the cost ledger, the budget projection — using
@@ -61,74 +64,74 @@ without anyone sharing the real ones.
 
 ## Path B — you're working on extraction
 
-Everything from Path A, plus your own Anthropic key and the n8n pipeline.
+Everything from Path A, plus an Anthropic key and the n8n pipeline.
 
-### 1. Get your own API key
+### 1. Get the `.env` contents
 
-1. Go to **https://console.anthropic.com** and sign up.
-2. **API Keys → Create Key.** Copy it — it starts with `sk-ant-`.
-3. New accounts usually get trial credit, which is plenty for testing.
+Kevin will send you a block of text that starts with
+`# ignite_hacks_2026 - .env`. That is the whole configuration, shared API key
+included.
 
-**Get your own rather than reusing Kevin's.** One shared key means one shared
-bill with no way to tell who spent what, and if it leaks everybody has to
-rotate at the same time. Separate keys also mean the Console shows you your
-own usage.
+In the root of the repo (same folder as `package.json`), create a file named
+exactly **`.env`** and paste it in.
 
-### 2. Put it in your `.env`
+> **Windows:** the filename is `.env` — nothing before the dot, no `.txt`
+> after it. File Explorer hides extensions by default, so you can easily end
+> up with `.env.txt`, which silently does nothing. In Notepad's Save dialog,
+> set *Save as type* to **All Files** and type `.env` yourself. To check:
+> `dir .env*` should list `.env` and nothing else.
 
-Open `.env` in any text editor. Find this line:
+`.env` is gitignored, so it stays on your machine.
 
-```
-ANTHROPIC_API_KEY=
-```
+*Prefer your own key?* Get one free at **https://console.anthropic.com** →
+API Keys → Create Key, and replace just the `ANTHROPIC_API_KEY=` line. New
+accounts usually come with trial credit.
 
-Paste your key immediately after the `=`. No quotes, no spaces:
-
-```
-ANTHROPIC_API_KEY=sk-ant-api03-your-actual-key-here
-```
-
-Save. Done — that file never leaves your machine.
-
-### 3. Start n8n
+### 2. Start n8n and wire it up
 
 Docker Desktop must be running first.
 
 ```bash
-npm run n8n:up      # first run pulls the image, give it a few minutes
+npm run gen:secrets   # creates web/.env.local; won't touch what you pasted
+npm run n8n:up        # first run pulls the image, give it a few minutes
+npm run n8n:setup     # imports the workflow, creates both credentials, activates
 ```
 
-Open **http://localhost:5678** and create an owner account. It's local only —
-any email and password works, and it never leaves your machine.
+`n8n:setup` does the fiddly part for you: it imports the workflow, creates the
+Anthropic and Header Auth credentials already attached to the right nodes,
+publishes the workflow, and restarts n8n. It reads everything from your `.env`,
+so the ingest token used by the web app and the one inside n8n cannot drift
+apart — a mismatch there is a `401` on every upload and is the most common way
+this setup breaks.
 
-### 4. Load the pipeline
+You should see:
+
+```
+✓ .env looks complete, n8n container is up
+✓ credentials imported (Anthropic + ingest token)
+✓ workflow imported
+✓ workflow published and activated
+```
+
+Then open **http://localhost:5678** and create an owner account when prompted.
+It's local only — any email and password works, and it never leaves your
+machine.
+
+<details>
+<summary>Doing it by hand instead</summary>
 
 In n8n: **Workflows → Import from File** →
-`n8n/syllabus-to-calendar.workflow.json`
+`n8n/syllabus-to-calendar.workflow.json`, then add two credentials —
+**Anthropic** on the *Claude: Extract Schedule + Costs* node, and **Header
+Auth** on the *Webhook: Manual Upload* node with name `X-Ingest-Token` and the
+`INGEST_TOKEN` value from your `.env`. Finally toggle **Inactive → Active**,
+top-right, and restart n8n.
 
-Then add two credentials:
+Until it is Active, n8n serves only a one-shot *test* URL and the app gets a
+404 reading `The pipeline is not listening`.
+</details>
 
-**Anthropic** — click the *Claude: Extract Schedule + Costs* node →
-*Create new credential* → paste your key → Save.
-
-**Header Auth** — click the *Webhook: Manual Upload* node →
-*Create new credential*:
-- Name: `X-Ingest-Token`
-- Value: copy the `INGEST_TOKEN` line out of your `.env`
-
-> These two must match **exactly**. A mismatch gives you `401` on every
-> upload. This is a password between the web app and the pipeline, so that
-> nobody who finds port 5678 can shove events into your calendar.
-
-### 5. Activate
-
-Toggle **Inactive → Active**, top-right.
-
-This one matters. Until it's Active, n8n only serves a one-shot *test* URL
-and the app gets a 404 that reads `The pipeline is not listening`. If you see
-that error, this toggle is almost always why.
-
-### 6. Test
+### 3. Test
 
 ```bash
 npm run web:dev

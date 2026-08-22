@@ -20,10 +20,20 @@ Short version if you are doing design, docs, mobile, or the pitch:
 then open http://localhost:3000 and click "See a worked example". That renders
 the entire product with sample data - no API key, no Google account, no cost.
 
-Do NOT ask Kevin for his API key. If you genuinely need one - only the tasks
-that actually run the extraction pipeline do - make your own free account at
-https://console.anthropic.com. Separate keys mean separate bills and no
-group-wide rotation when one leaks.
+If you need the live pipeline (only the extraction tasks do), Kevin will send
+you the .env contents. Save that text as a file named exactly ".env" in the
+repo root, then:
+
+    npm run gen:secrets
+    npm run n8n:up
+    npm run n8n:setup
+
+That last one imports the workflow, creates both credentials, and activates
+it. Docker Desktop has to be running.
+
+The shared key has a small budget. Keep EXTRACTION_MODEL=claude-sonnet-5 while
+developing (~$0.05/run), and use "See a worked example" for anything that is
+not a real extraction test - it costs nothing.
 
 
 WHAT'S ALREADY DONE

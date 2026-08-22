@@ -88,15 +88,26 @@ its own — no upload, no clicking.
 Needs Node 20+, Docker, and an Anthropic API key.
 
 ```bash
-git clone https://github.com/KevinHill14/ignitehacks.git
-cd ignitehacks
+git clone https://github.com/KevinHill14/ignite_hacks_2026.git
+cd ignite_hacks_2026
 
 npm run gen:secrets      # writes .env with a fresh encryption key + ingest token
+# paste your Anthropic key into the ANTHROPIC_API_KEY line in .env
 npm --prefix web install
 npm run n8n:up           # starts n8n on http://localhost:5678
+npm run n8n:setup        # imports the workflow, creates credentials, activates
+npm run web:dev          # http://localhost:3000
 ```
 
-Then, in the n8n UI at `http://localhost:5678`:
+`n8n:setup` handles the error-prone part — it creates both credentials from
+your `.env`, so the ingest token the web app sends and the one n8n checks
+cannot drift apart, and it publishes and activates the workflow. New to any of
+this? [docs/TEAMMATE-SETUP.md](docs/TEAMMATE-SETUP.md) walks it slowly.
+
+<details>
+<summary>Setting it up by hand in the n8n UI instead</summary>
+
+At `http://localhost:5678`:
 
 1. Create your owner account (local only).
 2. **Import** `n8n/syllabus-to-calendar.workflow.json`.
@@ -111,25 +122,28 @@ Then, in the n8n UI at `http://localhost:5678`:
    Until it's Active, n8n serves only a one-shot *test* URL and the app gets a
    404 — that's the "pipeline is not listening" error.
 
-5. *Optional:* add **Google Calendar OAuth2** and point it at a **throwaway
-   calendar** — a bad extraction then pollutes something disposable instead of
-   your real schedule. Without it the pipeline still runs and still returns the
-   full cost breakdown; only the calendar writes are reported as failed.
-6. *Optional:* add **Google Drive OAuth2**, set the folder on the
-   *Drive: New Syllabus Dropped* node, then **enable** that node — it ships
-   disabled, because n8n refuses to activate a workflow whose trigger has no
-   credential, which would block the upload path too.
+5. Restart n8n so the activation takes effect.
+
+</details>
+
+### Google (optional, either route)
+
+Neither is required. Without them the pipeline still extracts everything and
+still returns the full cost breakdown; only the calendar writes report as
+failed.
+
+- **Google Calendar OAuth2** — point it at a **throwaway calendar** first, so
+  a bad extraction pollutes something disposable rather than your real
+  schedule.
+- **Google Drive OAuth2** — set the folder on the *Drive: New Syllabus
+  Dropped* node, then **enable** that node. It ships disabled because n8n
+  refuses to activate a workflow whose trigger has no credential, which would
+  block the upload path too.
 
 See [docs/DEPLOY.md](docs/DEPLOY.md) for the Google Cloud setup.
 
-Finally:
-
-```bash
-npm run web:dev          # http://localhost:3000
-```
-
-Don't have Google connected yet? Click **See a worked example** to walk the
-whole results view with realistic data and no credentials.
+No Google account connected? Click **See a worked example** to walk the whole
+results view with realistic data and no credentials.
 
 ---
 

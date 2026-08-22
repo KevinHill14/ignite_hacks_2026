@@ -36,6 +36,23 @@ developing (~$0.05/run), and use "See a worked example" for anything that is
 not a real extraction test - it costs nothing.
 
 
+BRANCHES IN FLIGHT - read before you pull
+-----------------------------------------
+kevin/probabilistic-runway
+    Replaces the deterministic budget projection with a Monte Carlo forecast
+    (fan chart + confidence bands + "what moves the needle" levers).
+
+    If you are working on Google Calendar, this will NOT collide with you:
+      - it does not touch n8n/syllabus-to-calendar.workflow.json at all
+      - page.tsx changes are 2 added lines plus one contiguous deleted block
+        near the bottom (the old Runway component)
+      - everything else is new files, or appended to the END of globals.css
+
+    Keep working on main as normal and push whenever. This branch gets rebased
+    on top of your work, not the other way around, so nothing you do needs to
+    wait on it.
+
+
 WHAT'S ALREADY DONE
 -------------------
 - n8n pipeline (13 nodes): upload or Google Drive folder -> extract PDF text

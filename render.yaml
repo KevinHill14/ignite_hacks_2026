@@ -46,7 +46,9 @@ services:
     runtime: image
     plan: starter
     image:
-      url: docker.n8n.io/n8nio/n8n:latest
+      # Docker Hub, not n8n's own registry mirror (docker.n8n.io) — Render
+      # cannot fetch from that host. Same image, different front door.
+      url: docker.io/n8nio/n8n:latest
     disk:
       name: n8n-data
       mountPath: /home/node/.n8n

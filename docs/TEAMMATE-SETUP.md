@@ -154,6 +154,26 @@ If you do want it, `docs/DEPLOY.md` has the Google Cloud walkthrough. **Point
 it at a throwaway calendar, not your real one** — a bad extraction should
 pollute something disposable.
 
+### If you were sent a shared `.env`
+
+Two things in it are *not* portable, and both fail in confusing ways:
+
+- **`GOOGLE_CALENDAR_ID`** is whoever's calendar the sender was testing
+  against. If you connect your own Google account and leave their ID in
+  place, every calendar write fails with a 404 — your account cannot see
+  their calendar. Either replace it with your own calendar ID, set it to
+  `primary`, or ask them to share that calendar with you with **"Make
+  changes to events"** permission.
+- **Your Google account must be added as a test user** on the OAuth consent
+  screen by whoever created the Google Cloud project. If it isn't, the
+  Connect button fails with *"Access blocked: this app has not completed the
+  Google verification process."* That is not something you can fix on your
+  end — ask them to add you.
+
+For a demo where everyone should see the same events, the simplest setup is
+one shared demo calendar the whole team can write to, rather than a throwaway
+each.
+
 ---
 
 ## Rules about secrets

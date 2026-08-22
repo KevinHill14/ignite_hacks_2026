@@ -58,6 +58,13 @@ services:
         value: America/Toronto
       - key: TZ
         value: America/Toronto
+      # The workflow reads both of these at run time via $env. Without them
+      # the expressions fall back to their defaults, which silently means the
+      # wrong model and the connected account's PRIMARY calendar.
+      - key: EXTRACTION_MODEL
+        value: claude-sonnet-5
+      - key: GOOGLE_CALENDAR_ID
+        sync: false
       # Hardening, mirroring n8n/docker-compose.yml.
       - key: NODE_FUNCTION_ALLOW_EXTERNAL
         value: ""

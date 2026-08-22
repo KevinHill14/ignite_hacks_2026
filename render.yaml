@@ -29,6 +29,16 @@ services:
         generateValue: true
       - key: MAX_UPLOAD_MB
         value: "10"
+      # The password handed to judges. Set it in the dashboard, not here.
+      # Blank means no gate at all, which is fine locally and wrong in public.
+      - key: APP_PASSWORD
+        sync: false
+      # Six a minute, because a full course load is five files uploaded at
+      # once — one user action producing five requests.
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "6"
+      - key: RATE_LIMIT_PER_DAY
+        value: "25"
 
   # ------------------------------------------------------------------ n8n --
   - type: pserv # private service: no public URL, no inbound internet traffic
@@ -68,6 +78,13 @@ services:
         value: claude-sonnet-5
       - key: GOOGLE_CALENDAR_ID
         sync: false
+      # NOT OPTIONAL. n8n blocks $env unless this is the literal string
+      # "false" — unset means blocked. Without it the Calendar node's
+      # $env.GOOGLE_CALENDAR_ID throws "access to env vars denied" and every
+      # event fails, while EXTRACTION_MODEL silently falls back to the wrong
+      # model. Both failures are silent. This cost hours locally.
+      - key: N8N_BLOCK_ENV_ACCESS_IN_NODE
+        value: "false"
       # Hardening, mirroring n8n/docker-compose.yml.
       - key: NODE_FUNCTION_ALLOW_EXTERNAL
         value: ""

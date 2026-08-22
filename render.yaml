@@ -46,10 +46,23 @@ services:
         value: "25"
 
   # ------------------------------------------------------------------ n8n --
-  - type: pserv # private service: no public URL, no inbound internet traffic
+  # TEMPORARILY PUBLIC — flip back to `pserv` once Google is connected.
+  #
+  # n8n holds the Anthropic key and the Google refresh token, so it should not
+  # be reachable from the internet. But OAuth needs a browser to land on a
+  # callback URL, and a private service has no URL to land on. So it goes
+  # public just long enough to click Connect, then goes private again. The
+  # stored token keeps working afterwards.
+  #
+  # While it is public it is protected only by n8n's own login. Do not leave
+  # it this way.
+  - type: web
     name: syllabus-n8n
     runtime: image
     plan: starter
+    # n8n's own liveness endpoint. Render marks a web service unhealthy and
+    # restarts it if this fails, and n8n takes a while to boot on first run.
+    healthCheckPath: /healthz
     image:
       # Docker Hub, not n8n's own registry mirror (docker.n8n.io) — Render
       # cannot fetch from that host. Same image, different front door.

@@ -32,36 +32,65 @@ repo root, then:
 That last one imports the workflow, creates all credentials, and activates it.
 Docker Desktop has to be running.
 
-BUDGET: the shared Anthropic key has roughly $2.60 left, about 16 real runs at
-~$0.16 each. Keep EXTRACTION_MODEL=claude-sonnet-5 and use "See a worked
-example" for anything that is not a genuine extraction test - it costs nothing
-and is instant.
+BUDGET: the shared Anthropic key has roughly $2.30 left. A full 5-syllabus run
+costs about $0.15, so around 15 of them remain. Keep
+EXTRACTION_MODEL=claude-sonnet-5, and use the worked examples for anything
+that is not a genuine extraction test - they cost nothing and are instant.
 
 
 VERIFIED WORKING END TO END
 ---------------------------
-Real syllabus (Western CS1026B) -> 17 events on a real Google Calendar, with
-correct titles, dates and times. Midterm at 7pm, labs at 11:59pm, matching the
-document. ~80-100 seconds, ~$0.16 per run on claude-sonnet-5.
+FIVE syllabi at once, scored 18/18 against a hand-written answer key:
 
-Also working:
+    npm run test:demo-set      (~$0.15, needs the app + n8n running)
+
+    CHEM 201  $445   COMM 310  $240   ENGL 215  $0
+    MATH 240   $73   ARTD 250   $97
+    iClicker shared by CHEM 201 + MATH 240 -> counted ONCE
+    term total  $820 deduped, not $855 naive
+    crunch week Oct 19, 3 of 5 courses, 14% of the term's grades
+    25/25 events created on a real Google Calendar
+    5 files in 17 seconds wall clock (~85 if run one after another)
+
+ENGL 215 returning exactly $0.00 is the result worth pointing at in the pitch.
+It is a genuinely free course, and any price there would have been invented.
+
+Everything working:
+  - Multi-upload         up to 5, parallel, per-file status, retry one
+  - Merged term view     crunch weeks, per-course costs, shared-item dedupe
+  - Drop a course        recalculates the term and states what it saves
   - .ics download        works for ANY visitor, no sign-in, no cost
-  - Monte Carlo runway   2,000 simulated terms, fan chart, risk as a count
+  - Monte Carlo runway   2,000 simulated terms, risk stated as a count
   - OSAP / scholarship   student-account model: aid pays tuition first
   - Timeline detail      click any mark for the data behind it
-  - Worked example       full product, no credentials, free
+  - Password gate        APP_PASSWORD; blank = off for local work
+  - Rate limiting        6/min, 25/day per IP
+  - Worked examples      one course and a full load, both free
 
-Three verification suites, 50 checks total:
-    npm run check:sim      Monte Carlo maths
-    npm run check:income   OSAP / aid settlement
-    npm run check:ics      calendar file format
-    npm run check:merge    multi-syllabus merging (22 checks, UI not built yet)
+Seven verification suites, 105 checks:
+    npm run check:sim       Monte Carlo maths
+    npm run check:income    OSAP / aid settlement
+    npm run check:ics       calendar file format
+    npm run check:merge     multi-syllabus merging
+    npm run check:dedupe    shared-cost matching and its over-match guards
+    npm run check:auth      password gate + rate limiting
+    npm run check:demo      merged demo arithmetic
+
+TEST DATA
+  demo_syllabi_corpus/       5 clean syllabi for demoing. Answer key in the
+                             README. This is what test:demo-set runs against.
+  syllabus_examples/test_corpus/
+                             12 files built to BREAK things - bad OCR, 8-page
+                             documents, relative dates, missing data. Good for
+                             hunting bugs, wrong for demoing.
+  syllabus_examples/CS1026-*.pdf
+                             one real syllabus from Western.
 
 
 THE ONE THING THAT KEEPS BITING US
 -----------------------------------
-Three separate bugs today were the same shape: something missing, and a
-fallback quietly substituting a plausible value instead of failing.
+Several bugs this week were the same shape: something missing or mismatched,
+and code quietly substituting a plausible value instead of failing.
 
   - n8n blocks $env unless N8N_BLOCK_ENV_ACCESS_IN_NODE is literally "false".
     Unset means blocked. Every calendar write failed.
@@ -69,27 +98,35 @@ fallback quietly substituting a plausible value instead of failing.
     cost 1.7x more than intended, invisibly, for hours.
   - moment.tz(undefined, tz) returns NOW rather than throwing. 18 events were
     created untitled on today's date and the pipeline reported 18/18 SUCCESS.
+  - Cost dedupe compared exact strings, so "iClicker Cloud subscription" and
+    "iClicker Cloud (1-term licence)" never matched and the shared item was
+    billed twice. The total was wrong by $35 and nothing said so.
 
 Each produced a confident wrong answer rather than an error. If you are adding
 a fallback, ask whether a wrong-but-plausible value is worse than a crash. For
 money, dates, or anything with a side effect, it is.
 
+The same logic applies to fuzzy matching. The dedupe fix uses token-subset
+comparison, which could over-match and silently DELETE real costs from the
+total - a worse failure than the one it fixes. That is why check-dedupe.mjs
+exists and asserts that "Studio Kit 1" and "Studio Kit 2" stay separate.
+
 
 ===============================================================================
-PRIORITY ORDER - Kevin's plan, updated 2026-08-22 late
+PRIORITY ORDER - updated 2026-08-22, after the 5-syllabus test passed 18/18
 ===============================================================================
-  [x] Task 8    Password gate       DONE
+  [x] Task 5    Test corpora        DONE - 12 stress files + 5 demo files
   [x] Task 7    Rate limiting       DONE
-                Both deploy blockers are cleared. Render is unblocked.
+  [x] Task 8    Password gate       DONE
+  [x] Task 12   Multi-syllabus (5)  DONE - verified end to end
 
-  1. Task 13    Deploy to Render, so judges have somewhere to test
-  2. Task 12    Multi-syllabus upload (up to 5)   <-- IN PROGRESS, see below
-  3. Task 1 + 2 UI design pass, including mobile  <-- Kevin's friend
-  4. more fintech features - nice to have, not blocking
+  1. Task 13    Deploy to Render    <-- THE ONLY THING LEFT THAT BLOCKS JUDGING
+  2. Task 1 + 2 UI design pass, including mobile   <-- Kevin's friend
+  3. more fintech features - nice to have, not blocking
 
-  Running underneath all of it: Task 5, collect more syllabi. It needs no
-  coding, it unblocks task 12, and without it every extraction claim we make
-  rests on a single computer science course.
+Everything except the deploy is finished. docs/RENDER-DEPLOY.md walks it with
+every value to paste, and `npm run test:demo-set` will verify the deployed
+version exactly the way it verified the local one.
 
 
 SECURITY AUDIT - 2026-08-22
@@ -179,22 +216,19 @@ UI DESIGNER
 NO CODING NEEDED
 -------------------------------------------------------------------------------
 
-[ ] 5. Build the test corpus          <-- HIGHEST VALUE, do this first
-       Owner: ____________
-       Collect 8-10 real syllabi from different faculties (arts, engineering,
-       nursing, commerce, studio courses). Save to syllabus_examples/.
-       Only CS1026 (Western) is in there, and it has ONE cost line. Arts,
-       studio and nursing courses have far messier fee structures and are
-       where this will actually break.
-       For each, write down by hand what a human reads as the deadlines and
-       the costs, so we have ground truth to check against.
-       What will break it:
-         - "Week 6" instead of an actual date
-         - schedule tables that are images, not text
-         - fees buried in a paragraph instead of a list
-         - textbooks named with no price
-       This also unblocks task 12 - we cannot test 5-syllabus upload with one
-       syllabus.
+[x] 5. Build the test corpus - DONE
+       Two corpora now exist, and they are for different jobs:
+         demo_syllabi_corpus/            5 clean files, answer key in README.
+                                         This is the demo and the regression
+                                         test. Currently 18/18.
+         syllabus_examples/test_corpus/  12 files built to break things.
+                                         Bad OCR, 8-page documents, relative
+                                         dates, deliberately missing data.
+       STILL USEFUL: nobody has run the 12-file stress corpus yet. It is where
+       the remaining extraction bugs are, and it costs about $0.30 to sweep.
+       Start with MATH240 and PHIL101 - if either produces a cost, precision
+       has regressed. Note that 5 of the 12 are .txt/.docx and will be
+       rejected; convert them to PDF first, or skip them.
 
 [x] 6. Google Cloud OAuth setup - DONE
        Owner: Ayaan (setup) + Kevin (connected the account)
@@ -252,18 +286,26 @@ CODING
        If a future syllabus ever double-counts across currencies, add an
        "alternatives" array to the cost schema in the extraction node.
 
-[ ] 11. Retry / partial-failure handling
-       Owner: ____________
-       If Google Calendar rejects some events, the pipeline reports how many
-       failed but there is no way to retry just those. A "retry failed events"
-       button would be a nice touch.
+[~] 11. Retry / partial-failure handling - HALF DONE
+       DONE at the file level: if one of five syllabi fails to parse, the other
+       four still produce a merged timeline, and Retry re-runs only the failed
+       file rather than spending four more model calls to fix one.
+       STILL OPEN at the event level: if Google Calendar rejects some events
+       but the parse succeeded, the UI reports how many failed with no way to
+       retry just those. Lower value than it sounds - it has not happened once
+       since the date bug was fixed, and 25/25 events landed on the last run.
 
-[ ] 12. Multi-syllabus upload (up to 5)   <-- BIGGEST REMAINING FEATURE
-       Owner: a second Claude agent, started 2026-08-22 late
-       COORDINATE BEFORE TOUCHING THIS. Two people building the same UI will
-       collide badly - it needs page.tsx, which is already the highest-risk
-       file in the repo.
-       HALF DONE. The merge logic is finished and tested; the UI is not built.
+[x] 12. Multi-syllabus upload (up to 5) - DONE, verified 18/18
+       Uploads run in parallel, not in sequence: 5 files in 17 seconds rather
+       than about 85. Each settles independently, so one unreadable PDF cannot
+       take the other four down, and retry acts on just the failed file.
+       The merged view surfaces what no single syllabus can: crunch weeks,
+       shared costs counted once, and which course is quietly expensive.
+       Plus a "drop this course" toggle that recalculates the term and says
+       what dropping it would save.
+       Verify with: npm run test:demo-set
+
+       ORIGINAL PLAN, FOR REFERENCE - everything below is now built:
 
        Already written: web/src/lib/merge.ts + scripts/check-merge.mjs
        (22 checks passing, `npm run check:merge`). It handles:
@@ -287,8 +329,9 @@ CODING
        a full course load is 5 per term. 10 would need syllabi that do not
        exist yet in September.
 
-       WARNING: a full 5-file test costs ~$0.80. Build against the worked
-       example and only do one real run at the end.
+       COST, measured rather than estimated: a full 5-file run is ~$0.15, not
+       the $0.80 originally guessed. The demo syllabi are short. Still use the
+       free worked examples for anything that is not a real extraction test.
 
 [ ] 13. Deploy to Render              <-- Kevin has 50 free credits
        Owner: ____________

@@ -95,8 +95,15 @@ services:
       # That is a crash loop, and a crash-looping web service never gets a
       # public URL, so the symptom looks like "Render didn't give me a URL"
       # rather than "out of memory". 384 leaves ~128 MB for the runtime.
+      # 320, not 384. The container is 512 MB total and the heap is only part
+      # of the process: young generation, compiled code, and buffers live
+      # outside it and add roughly 100-120 MB. 384 + that overhead lands close
+      # enough to the ceiling to trade a heap crash (status 134) for a
+      # container OOM kill (status 137), which is the same outage wearing a
+      # different exit code. 320 clears the ~256 MB default that was killing
+      # boot while leaving real headroom.
       - key: NODE_OPTIONS
-        value: --max-old-space-size=384
+        value: --max-old-space-size=320
       # Task runners execute Code nodes in a separate sandboxed process, with
       # a broker process in front of it. That is the right call on a real
       # host and pure overhead here: our two Code nodes do array mapping and
@@ -166,7 +173,13 @@ services:
       #
       # The -wnw8 suffix is Render's, added because the name syllabus-n8n was
       # already taken globally. It is part of the hostname, not a typo.
-      - key: WEBHOOK_URL
+      # N8N_WEBHOOK_URL, not the older WEBHOOK_URL, which n8n 2.35 deprecates
+      # in favour of it ("sets the base URL for both test and production
+      # webhooks"). Note this collides by name with the web app's own
+      # N8N_WEBHOOK_URL above — same spelling, unrelated jobs. There it is the
+      # internal address the app posts to; here it is the public base URL n8n
+      # advertises for itself.
+      - key: N8N_WEBHOOK_URL
         value: https://syllabus-n8n-wnw8.onrender.com
       - key: N8N_EDITOR_BASE_URL
         value: https://syllabus-n8n-wnw8.onrender.com

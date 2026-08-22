@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { IngestResult } from "@/lib/types";
 import { mergeResults } from "@/lib/merge";
+import { buildIcs } from "@/lib/ics";
 import { RunwayForecast } from "@/components/RunwayForecast";
 
 /**
@@ -37,6 +38,51 @@ function money(amount: number, currency: string | null) {
   }
 }
 
+/**
+ * Export the whole term as one calendar file.
+ *
+ * The merged export is the more useful one: a student importing five courses
+ * wants a single file, not five downloads they then have to merge themselves.
+ * Event titles already carry the course code, so everything stays legible
+ * once it lands in a calendar app.
+ */
+function DownloadTermButton({ merged }: { merged: ReturnType<typeof mergeResults> }) {
+  const [done, setDone] = useState(false);
+
+  function download() {
+    const ics = buildIcs({
+      events: merged.events,
+      costs: merged.costs,
+      courseCode: `${merged.courses.length} courses`,
+      courseTitle: "Full term",
+      timezone: merged.timezone,
+    });
+
+    const url = URL.createObjectURL(
+      new Blob([ics], { type: "text/calendar;charset=utf-8" }),
+    );
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "my-term.ics";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    setDone(true);
+    setTimeout(() => setDone(false), 4000);
+  }
+
+  const count =
+    merged.events.length + merged.costs.filter((c) => c.neededBy).length;
+
+  return (
+    <button className="btn" onClick={download} disabled={count === 0}>
+      {done ? "Downloaded — open it to import" : `Add all ${count} to my calendar`}
+    </button>
+  );
+}
+
 export function MergedResults({
   results,
   onReset,
@@ -44,14 +90,65 @@ export function MergedResults({
   results: IngestResult[];
   onReset: () => void;
 }) {
-  const merged = useMemo(() => mergeResults(results), [results]);
+  /*
+   * Dropping a course is a financial decision, and nothing else in a student's
+   * life helps them make it. Toggling one off here recomputes the term total,
+   * the crunch weeks, and the runway — so the question "can I afford to keep
+   * this?" gets an actual answer rather than a shrug.
+   *
+   * Indices into `results` rather than course keys: two syllabi could plausibly
+   * carry the same course code, and an index is unambiguous.
+   */
+  const [dropped, setDropped] = useState<Set<number>>(new Set());
+
+  const kept = useMemo(
+    () => results.filter((_, i) => !dropped.has(i)),
+    [results, dropped],
+  );
+
+  // Everything renders from the kept set; `full` exists only to measure what
+  // dropping actually changed.
+  const merged = useMemo(() => mergeResults(kept), [kept]);
+  const full = useMemo(() => mergeResults(results), [results]);
+
   const colorOf = useMemo(
-    () => new Map(merged.courses.map((c) => [c.key, c.color])),
-    [merged.courses],
+    () => new Map(full.courses.map((c) => [c.key, c.color])),
+    [full.courses],
   );
 
   const primary = Object.entries(merged.totals).sort((a, b) => b[1].all - a[1].all)[0];
-  const currency = primary?.[0] ?? "CAD";
+  const fullPrimary = Object.entries(full.totals).sort((a, b) => b[1].all - a[1].all)[0];
+  const currency = primary?.[0] ?? fullPrimary?.[0] ?? "CAD";
+
+  const saved = (fullPrimary?.[1].all ?? 0) - (primary?.[1].all ?? 0);
+  const clustersGone = full.clusters.length - merged.clusters.length;
+  const deadlinesGone = full.events.length - merged.events.length;
+
+  const toggle = (i: number) =>
+    setDropped((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+
+  if (kept.length === 0) {
+    return (
+      <div className="reveal">
+        <div className="verdict" style={{ marginBottom: 22 }}>
+          <div>
+            <p className="total__label">Every course dropped</p>
+            <p className="verdict__note">
+              Put one back to see the term again.
+            </p>
+          </div>
+        </div>
+        <button className="btn" onClick={() => setDropped(new Set())}>
+          Undo
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="reveal">
@@ -120,18 +217,66 @@ export function MergedResults({
             </span>
           )}
         </div>
-        {merged.perCourse.map((p) => (
-          <div className="breakdown__row" key={p.courseKey}>
-            <span className="breakdown__swatch" style={{ background: p.color }} />
-            <span className="breakdown__name">
-              {p.code || p.title}
-              <span className="breakdown__sub">{p.eventCount} deadlines</span>
-            </span>
-            <span className="breakdown__amount">
-              {p.costTotal > 0 ? money(p.costTotal, p.currency) : "no cost listed"}
-            </span>
+        <p className="breakdown__hint">
+          Thinking of dropping one? Turn it off and everything below recalculates.
+        </p>
+
+        {results.map((r, i) => {
+          const key = r.course.code || r.course.title || r.sourceName;
+          const row = full.perCourse.find((p) => p.courseKey === key);
+          const isDropped = dropped.has(i);
+          return (
+            <div
+              className={`breakdown__row${isDropped ? " is-dropped" : ""}`}
+              key={`${key}-${i}`}
+            >
+              <span
+                className="breakdown__swatch"
+                style={{ background: colorOf.get(key) }}
+              />
+              <span className="breakdown__name">
+                {r.course.code || r.course.title}
+                <span className="breakdown__sub">
+                  {r.events.length} deadlines
+                  {row && row.costTotal === 0 && " · nothing to buy"}
+                </span>
+              </span>
+              <span className="breakdown__amount">
+                {row && row.costTotal > 0
+                  ? money(row.costTotal, row.currency)
+                  : "no cost listed"}
+              </span>
+              <button
+                className="breakdown__drop"
+                onClick={() => toggle(i)}
+                aria-pressed={isDropped}
+              >
+                {isDropped ? "Put back" : "Drop"}
+              </button>
+            </div>
+          );
+        })}
+
+        {dropped.size > 0 && (
+          <div className="whatif">
+            <p className="whatif__label">
+              Without {[...dropped]
+                .map((i) => results[i].course.code || results[i].course.title)
+                .join(" and ")}
+            </p>
+            <p className="whatif__figure">
+              {saved > 0 ? `${money(saved, currency)} less to pay` : "No change to the total"}
+            </p>
+            <p className="whatif__detail">
+              {deadlinesGone} fewer deadline{deadlinesGone === 1 ? "" : "s"}
+              {clustersGone > 0 &&
+                ` · ${clustersGone} crunch week${clustersGone === 1 ? "" : "s"} gone`}
+              {clustersGone === 0 &&
+                merged.clusters.length > 0 &&
+                " · the crunch week stays"}
+            </p>
           </div>
-        ))}
+        )}
         {merged.duplicates.length > 0 && (
           <p className="breakdown__note">
             Per-course figures include items shared between courses, so they add
@@ -176,9 +321,19 @@ export function MergedResults({
         </section>
       )}
 
-      <button className="btn" onClick={onReset} style={{ marginBottom: 56 }}>
-        Start over
-      </button>
+      <div
+        style={{
+          display: "flex",
+          gap: 16,
+          flexWrap: "wrap",
+          marginBottom: 56,
+        }}
+      >
+        <button className="btn" onClick={onReset}>
+          Start over
+        </button>
+        <DownloadTermButton merged={merged} />
+      </div>
     </div>
   );
 }

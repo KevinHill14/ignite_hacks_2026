@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   IngestResponse,
   IngestResult,
@@ -538,6 +538,18 @@ export default function Home() {
   const busy = phase === "working";
   const succeeded = slots.filter((s) => s.status === "done" && s.result).map((s) => s.result!);
 
+  // Seconds since the run started, so a 90-second wait does not look frozen.
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!busy) {
+      setElapsed(0);
+      return;
+    }
+    const started = Date.now();
+    const id = setInterval(() => setElapsed(Math.floor((Date.now() - started) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [busy]);
+
   const reset = useCallback(() => {
     setPhase("idle");
     setResult(null);
@@ -684,9 +696,23 @@ export default function Home() {
 
         {busy && (
           <div className="progress" style={{ marginBottom: 40 }}>
-            <span>Working</span>
+            {/*
+              Elapsed seconds rather than invented stage names. n8n reports no
+              intermediate progress, so any "extracting… pricing…" sequence
+              would be a timer pretending to be telemetry. A number that is
+              visibly counting says the same reassuring thing — this is still
+              running — without claiming to know something we do not.
+            */}
+            <span>Working · {elapsed}s</span>
             <span className="progress__bar">
               <span />
+            </span>
+            <span className="progress__note">
+              {elapsed < 30
+                ? "reading the document"
+                : elapsed < 90
+                  ? "usually about 90 seconds"
+                  : "longer than usual — still going"}
             </span>
           </div>
         )}

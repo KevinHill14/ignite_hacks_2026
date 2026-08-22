@@ -1834,3 +1834,83 @@ select.field__input {
   color: var(--ink-faint);
   margin: 8px 0 0;
 }
+
+/* --- what-if: dropping a course -------------------------------------------- */
+
+.breakdown__hint {
+  margin: 10px 0 4px;
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+
+.breakdown__row.is-dropped {
+  opacity: 0.4;
+}
+
+.breakdown__row.is-dropped .breakdown__amount {
+  text-decoration: line-through;
+}
+
+.breakdown__drop {
+  border: 1px solid var(--rule-strong);
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.breakdown__drop:hover {
+  border-color: var(--stamp);
+  color: var(--stamp);
+}
+
+.breakdown__row.is-dropped .breakdown__drop {
+  border-color: var(--violet);
+  color: var(--violet);
+}
+
+.whatif {
+  border: 2px solid var(--violet);
+  background: var(--violet-wash);
+  padding: 18px 20px;
+  margin-top: 18px;
+}
+
+.whatif__label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--violet);
+  margin: 0 0 4px;
+}
+
+.whatif__figure {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.5rem, 4vw, 2.1rem);
+  line-height: 1;
+  letter-spacing: -0.025em;
+  color: var(--violet);
+  margin: 0 0 6px;
+}
+
+.whatif__detail {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+
+.progress__note {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}

@@ -876,6 +876,227 @@ body {
   }
 }
 
+/* ===========================================================================
+   Probabilistic runway. Appended deliberately: everything above is shared
+   with other in-flight work, so new rules go at the end where they cannot
+   collide.
+   =========================================================================== */
+
+.runway__blurb {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+  max-width: 66ch;
+}
+
+.spend__vol {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  margin-left: 7px;
+  letter-spacing: 0.04em;
+}
+
+select.field__input {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%),
+    linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 34px;
+}
+
+/* --- headline verdict ------------------------------------------------------ */
+
+.verdict--risk {
+  display: grid;
+  grid-template-columns: minmax(140px, auto) 1fr;
+  gap: 26px;
+  align-items: center;
+}
+
+@media (max-width: 620px) {
+  .verdict--risk {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.verdict--risk.is-low {
+  border-color: var(--violet);
+  background: var(--violet-wash);
+}
+
+.verdict--risk.is-medium {
+  border-color: var(--rule-strong);
+  background: var(--paper-panel);
+}
+
+.verdict--risk.is-high {
+  border-color: var(--stamp);
+  background: var(--stamp-wash);
+}
+
+.verdict--risk.is-low .verdict__figure {
+  color: var(--violet);
+}
+
+.verdict--risk.is-medium .verdict__figure {
+  color: var(--ink);
+}
+
+.verdict--risk.is-high .verdict__figure {
+  color: var(--stamp);
+}
+
+.outcomes {
+  display: grid;
+  gap: 7px;
+}
+
+.outcome {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 5px;
+}
+
+.outcome:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.outcome__label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.outcome__value {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.outcome__value.is-bad {
+  color: var(--stamp);
+}
+
+.outcome__value.is-good {
+  color: var(--violet);
+}
+
+/* --- fan chart ------------------------------------------------------------- */
+
+.fan__wrap {
+  margin-top: 26px;
+}
+
+.fan {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+
+.fan__legend {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+
+.fan__legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fan__legend i {
+  width: 12px;
+  height: 10px;
+  display: inline-block;
+}
+
+.fan__legend .k-band {
+  background: var(--violet);
+  opacity: 0.25;
+}
+
+.fan__legend .k-mid {
+  height: 3px;
+  background: var(--violet);
+}
+
+.fan__legend .k-shock {
+  width: 2px;
+  height: 12px;
+  background: var(--stamp);
+}
+
+.fan__band {
+  animation: fade 620ms ease both;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* --- levers ---------------------------------------------------------------- */
+
+.levers {
+  margin-top: 28px;
+  border-top: 1px solid var(--rule);
+  padding-top: 18px;
+}
+
+.levers ul {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 9px;
+}
+
+.levers li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.levers li:last-child {
+  border-bottom: 0;
+}
+
+.levers__name {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.levers__effect {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--stamp);
+  text-align: right;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -102,6 +102,29 @@ const credentials = [
   },
 ];
 
+// Google is optional, so only build the credential if the OAuth client is in
+// .env. We can create the credential but not authorise it — OAuth needs a
+// human at a browser — so this gets the client id/secret in place and leaves
+// exactly one click ("Connect") to do by hand.
+const hasGoogleClient = Boolean(
+  env.GOOGLE_OAUTH_CLIENT_ID && env.GOOGLE_OAUTH_CLIENT_SECRET,
+);
+
+if (hasGoogleClient) {
+  credentials.push({
+    id: "GOOGLE_CALENDAR_OAUTH",
+    name: "Google Calendar account",
+    type: "googleCalendarOAuth2Api",
+    data: {
+      clientId: env.GOOGLE_OAUTH_CLIENT_ID,
+      clientSecret: env.GOOGLE_OAUTH_CLIENT_SECRET,
+      // Narrowest scope that can still create events. Deliberately not
+      // `calendar`, which would also allow deleting entire calendars.
+      scope: "https://www.googleapis.com/auth/calendar.events",
+    },
+  });
+}
+
 // Written to the OS temp dir, never inside the repo, and deleted in `finally`.
 const localCreds = join(tmpdir(), `n8n-creds-${process.pid}.json`);
 const remoteCreds = "/tmp/setup-creds.json";
@@ -116,7 +139,10 @@ try {
 
   docker(["cp", localCreds, `${CONTAINER}:${remoteCreds}`]);
   docker(["exec", CONTAINER, "n8n", "import:credentials", `--input=${remoteCreds}`]);
-  console.log(`${green("✓")} credentials imported (Anthropic + ingest token)`);
+  console.log(
+    `${green("✓")} credentials imported (Anthropic + ingest token` +
+      (hasGoogleClient ? " + Google Calendar client)" : ")"),
+  );
 
   const workflowPath = join(root, "n8n", "syllabus-to-calendar.workflow.json");
   docker(["cp", workflowPath, `${CONTAINER}:${remoteWorkflow}`]);
@@ -166,9 +192,28 @@ console.log(
     ? `\n${green("All set.")} Start the app with ${dim("npm run web:dev")} and open http://localhost:3000`
     : `\n${green("Imported.")} n8n is still starting — give it a moment, then run ${dim("npm run web:dev")}`,
 );
-console.log(
-  dim(
-    "  Google Calendar is optional. Without it the pipeline still extracts\n" +
-      "  everything; only the calendar writes report as failed.",
-  ),
-);
+const calendarTarget = env.GOOGLE_CALENDAR_ID || "primary";
+
+if (hasGoogleClient) {
+  console.log(
+    `\n${green("One step left to turn on Google Calendar.")}\n` +
+      "  OAuth needs a browser, so this part cannot be scripted:\n\n" +
+      "    1. open http://localhost:5678\n" +
+      '    2. Settings -> Credentials -> "Google Calendar account"\n' +
+      '    3. click Connect and pick your Google account\n\n' +
+      `  Events will be written to: ${calendarTarget}` +
+      (calendarTarget === "primary"
+        ? `\n  ${red("This is your REAL calendar.")} Set GOOGLE_CALENDAR_ID in .env to a\n` +
+          "  throwaway calendar until you trust the extraction."
+        : ""),
+  );
+} else {
+  console.log(
+    dim(
+      "\n  Google Calendar is off. Without it the pipeline still extracts\n" +
+        "  everything; only the calendar writes report as failed.\n" +
+        "  To turn it on: put GOOGLE_OAUTH_CLIENT_ID / _SECRET in .env and\n" +
+        "  re-run this script. See docs/DEPLOY.md for the Google Cloud steps.",
+    ),
+  );
+}

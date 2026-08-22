@@ -131,13 +131,25 @@ NO CODING NEEDED
          - fees buried in a paragraph instead of a list
          - textbooks named with no price
 
-[ ] 6. Google Cloud OAuth setup       <-- blocks the first real end-to-end test
-       Owner: ____________
+[~] 6. Google Cloud OAuth setup       <-- blocks the first real end-to-end test
+       Owner: Ayaan
        Full steps in docs/DEPLOY.md. Fiddly but no code.
        Enable Calendar API + Drive API, make an OAuth client, connect both
        credentials inside n8n.
        IMPORTANT: point the Calendar node at a THROWAWAY calendar first, not
        your real one. A bad extraction should pollute something disposable.
+
+       PROGRESS: the code side is done. `npm run n8n:setup` now builds the
+       Google Calendar credential straight from GOOGLE_OAUTH_CLIENT_ID /
+       GOOGLE_OAUTH_CLIENT_SECRET in .env, so the only manual step left is
+       clicking Connect in the n8n UI (OAuth needs a browser).
+       Also fixed: the Calendar node was hardcoded to "primary" — your real
+       calendar — which contradicted the warning above. It now reads
+       GOOGLE_CALENDAR_ID from .env so a throwaway calendar is one line.
+       Events now come in violet (colorId 3, matching VIOLET = time) with
+       popup reminders at 1 day and 1 hour.
+       Still to do: the actual Google Cloud Console clicking + first real
+       end-to-end run against a throwaway calendar.
 
 
 -------------------------------------------------------------------------------

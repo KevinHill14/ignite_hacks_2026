@@ -214,16 +214,23 @@
       "parameters": {
         "calendar": {
           "__rl": true,
-          "value": "primary",
-          "mode": "list",
-          "cachedResultName": "primary"
+          "value": "={{ $env.GOOGLE_CALENDAR_ID || 'primary' }}",
+          "mode": "id"
         },
         "start": "={{ $json.start }}",
         "end": "={{ $json.end }}",
         "additionalFields": {
           "summary": "={{ $json.summary }}",
           "description": "={{ $json.description }}",
-          "timeZone": "={{ $json.timezone }}"
+          "timeZone": "={{ $json.timezone }}",
+          "color": "3",
+          "useDefaultReminders": false,
+          "remindersUi": {
+            "remindersValues": [
+              { "method": "popup", "minutes": 1440 },
+              { "method": "popup", "minutes": 60 }
+            ]
+          }
         },
         "options": {}
       },

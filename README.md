@@ -132,9 +132,12 @@ Neither is required. Without them the pipeline still extracts everything and
 still returns the full cost breakdown; only the calendar writes report as
 failed.
 
-- **Google Calendar OAuth2** — point it at a **throwaway calendar** first, so
-  a bad extraction pollutes something disposable rather than your real
-  schedule.
+- **Google Calendar OAuth2** — put `GOOGLE_OAUTH_CLIENT_ID` and
+  `GOOGLE_OAUTH_CLIENT_SECRET` in `.env` and `npm run n8n:setup` builds the
+  credential; you just click **Connect** in the n8n UI. Set
+  `GOOGLE_CALENDAR_ID` to a **throwaway calendar** first, so a bad extraction
+  pollutes something disposable rather than your real schedule. Deadlines
+  arrive in violet with popup reminders a day and an hour ahead.
 - **Google Drive OAuth2** — set the folder on the *Drive: New Syllabus
   Dropped* node, then **enable** that node. It ships disabled because n8n
   refuses to activate a workflow whose trigger has no credential, which would

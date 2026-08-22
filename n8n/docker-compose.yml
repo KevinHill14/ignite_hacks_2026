@@ -31,6 +31,10 @@ services:
       - TZ=${GENERIC_TIMEZONE:-America/Toronto}
       # Swap the extraction model without editing the workflow.
       - EXTRACTION_MODEL=${EXTRACTION_MODEL:-claude-opus-5}
+      # Which calendar deadlines land on. Defaults to the primary calendar,
+      # but point it at a throwaway one until you trust the extraction — a bad
+      # date should pollute something disposable, not your real schedule.
+      - GOOGLE_CALENDAR_ID=${GOOGLE_CALENDAR_ID:-primary}
 
       # --- Hardening ----------------------------------------------------
       # Block the Code node from importing arbitrary node modules.

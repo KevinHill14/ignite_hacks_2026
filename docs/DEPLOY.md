@@ -14,8 +14,22 @@
    http://localhost:5678/rest/oauth2-credential/callback
    ```
 
-5. In n8n, create **Google Calendar OAuth2** and **Google Drive OAuth2**
-   credentials with that client ID and secret, then click **Connect**.
+5. Put the client ID and secret in your `.env`:
+
+   ```
+   GOOGLE_OAUTH_CLIENT_ID=...apps.googleusercontent.com
+   GOOGLE_OAUTH_CLIENT_SECRET=...
+   ```
+
+   Then `npm run n8n:setup` creates the **Google Calendar OAuth2** credential
+   for you, already attached to the right node. All that's left is opening
+   <http://localhost:5678> → **Settings → Credentials → Google Calendar
+   account** and clicking **Connect** — OAuth needs a browser, so that click
+   can't be scripted.
+
+   For **Google Drive OAuth2** (only needed for the hands-free folder-drop
+   path), create it by hand in the same screen with the same client ID and
+   secret, then enable the *Drive: New Syllabus Dropped* node.
 
 Request the narrowest scopes that work:
 
@@ -23,6 +37,21 @@ Request the narrowest scopes that work:
 |---|---|---|
 | Calendar | `calendar.events` | Create events. Not `calendar`, which also allows deleting calendars. |
 | Drive | `drive.readonly` | Read dropped syllabi. The pipeline never writes to Drive. |
+
+### Pick the calendar before the first run
+
+`GOOGLE_CALENDAR_ID` in `.env` decides where deadlines land. It defaults to
+`primary` — **your real calendar**. Until you trust the extraction, make a
+throwaway: Google Calendar → **+** → *Create new calendar*, then
+**Settings → Integrate calendar** → copy the Calendar ID.
+
+```
+GOOGLE_CALENDAR_ID=c_a1b2c3d4e5f6@group.calendar.google.com
+```
+
+A bad date should land somewhere you can delete in one click. Restart n8n
+(`npm run n8n:up`) after changing it — the workflow reads it from the
+environment at run time.
 
 ---
 

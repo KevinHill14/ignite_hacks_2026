@@ -2,6 +2,7 @@
 IGNITEHACKS 2026 - OPEN TASKS
 Pick what you want. Put your name next to it in this file and push, so we
 don't collide.
+Last updated: 2026-08-22, after the first successful end-to-end run.
 ===============================================================================
 
 FIRST TIME HERE? READ docs/TEAMMATE-SETUP.md
@@ -28,60 +29,72 @@ repo root, then:
     npm run n8n:up
     npm run n8n:setup
 
-That last one imports the workflow, creates both credentials, and activates
-it. Docker Desktop has to be running.
+That last one imports the workflow, creates all credentials, and activates it.
+Docker Desktop has to be running.
 
-The shared key has a small budget. Keep EXTRACTION_MODEL=claude-sonnet-5 while
-developing (~$0.05/run), and use "See a worked example" for anything that is
-not a real extraction test - it costs nothing.
-
-
-BRANCHES IN FLIGHT - read before you pull
------------------------------------------
-kevin/probabilistic-runway
-    Replaces the deterministic budget projection with a Monte Carlo forecast
-    (fan chart + confidence bands + "what moves the needle" levers).
-
-    If you are working on Google Calendar, this will NOT collide with you:
-      - it does not touch n8n/syllabus-to-calendar.workflow.json at all
-      - page.tsx changes are 2 added lines plus one contiguous deleted block
-        near the bottom (the old Runway component)
-      - everything else is new files, or appended to the END of globals.css
-
-    Keep working on main as normal and push whenever. This branch gets rebased
-    on top of your work, not the other way around, so nothing you do needs to
-    wait on it.
+BUDGET: the shared Anthropic key has roughly $2.60 left, about 16 real runs at
+~$0.16 each. Keep EXTRACTION_MODEL=claude-sonnet-5 and use "See a worked
+example" for anything that is not a genuine extraction test - it costs nothing
+and is instant.
 
 
-WHAT'S ALREADY DONE
--------------------
-- n8n pipeline (13 nodes): upload or Google Drive folder -> extract PDF text
-  -> sanitize -> Claude extraction -> validate -> write Google Calendar events
-- Next.js web app: upload UI, term spine graphic, cost ledger, runway
-  projection
-- Security pass: see docs/SECURITY.md
-- Docs: README.md, docs/DEPLOY.md, docs/SECURITY.md
+VERIFIED WORKING END TO END
+---------------------------
+Real syllabus (Western CS1026B) -> 17 events on a real Google Calendar, with
+correct titles, dates and times. Midterm at 7pm, labs at 11:59pm, matching the
+document. ~80-100 seconds, ~$0.16 per run on claude-sonnet-5.
 
-VERIFIED WORKING
-----------------
-The full pipeline has been run end to end on a real syllabus (Western
-CS1026B, Winter 2026):
+Also working:
+  - .ics download        works for ANY visitor, no sign-in, no cost
+  - Monte Carlo runway   2,000 simulated terms, fan chart, risk as a count
+  - OSAP / scholarship   student-account model: aid pays tuition first
+  - Timeline detail      click any mark for the data behind it
+  - Worked example       full product, no credentials, free
 
-    18 deadlines with grade weights, 5 costs, 12 warnings
-    ~40-75 seconds per run, ~$0.05 on claude-sonnet-5
+Three verification suites, 50 checks total:
+    npm run check:sim      Monte Carlo maths
+    npm run check:income   OSAP / aid settlement
+    npm run check:ics      calendar file format
+    npm run check:merge    multi-syllabus merging (22 checks, UI not built yet)
 
-Notable: the syllabus prices one required eTextbook two ways ($75.00 CAD at
-the bookstore, $52.50 USD direct). The extractor emitted ONE cost and warned
-not to budget for both. It also refused to invent a date for the final exam
-(the Registrar sets it in March) and dropped the entry rather than guessing,
-and it caught a stale term code in the bookstore link.
 
-Still untested: Google Calendar writes (nobody has connected OAuth yet, so
-calendar events currently report as failed while everything else works).
+THE ONE THING THAT KEEPS BITING US
+-----------------------------------
+Three separate bugs today were the same shape: something missing, and a
+fallback quietly substituting a plausible value instead of failing.
+
+  - n8n blocks $env unless N8N_BLOCK_ENV_ACCESS_IN_NODE is literally "false".
+    Unset means blocked. Every calendar write failed.
+  - A try/catch around that silently downgraded the model to Opus. Every run
+    cost 1.7x more than intended, invisibly, for hours.
+  - moment.tz(undefined, tz) returns NOW rather than throwing. 18 events were
+    created untitled on today's date and the pipeline reported 18/18 SUCCESS.
+
+Each produced a confident wrong answer rather than an error. If you are adding
+a fallback, ask whether a wrong-but-plausible value is worse than a crash. For
+money, dates, or anything with a side effect, it is.
 
 
 ===============================================================================
-ROLES - roughly grouped, but take whatever you want
+PRIORITY ORDER - Kevin's plan, 2026-08-22
+===============================================================================
+  1. Task 1 + 2   UI design pass, including mobile
+  2. Task 8       Password gate      \  BOTH must land BEFORE the deploy.
+  3. Task 7       Rate limiting      /  A public URL without them means anyone
+                                        can drain the API credits, and a
+                                        password alone does not stop someone
+                                        who has the password from looping.
+  4. Task 13      Deploy to Render, so judges have somewhere to test
+  5. Task 12      Multi-syllabus upload (up to 5)
+  6. more fintech features - nice to have, not blocking
+
+  Running underneath all of it: Task 5, collect more syllabi. It needs no
+  coding, it unblocks task 12, and without it every extraction claim we make
+  rests on a single computer science course.
+
+
+===============================================================================
+OPEN TASKS
 ===============================================================================
 
 -------------------------------------------------------------------------------
@@ -90,125 +103,185 @@ UI DESIGNER
 
 [ ] 1. Design pass on the results view
        Owner: ____________
-       The look is a "carbon-copy bursar form": warm gray paper, duplicating
-       machine violet, stamp red. Two rules the design depends on:
+       The look is a "carbon-copy bursar form". Three rules the design depends
+       on - keep these and the page stays readable at a glance:
          - VIOLET always means time (deadlines)
-         - RED always means money (costs)
-       Nothing else may use those two colors. Keep that and the page stays
-       readable at a glance.
+         - STAMP RED always means money leaving
+         - INK means money arriving (the ledger convention: credits black,
+           debits red)
+       Nothing else may use those colors.
        Files: web/src/app/globals.css (all tokens are at the top)
        Worth looking at:
-         - Empty states. What does the page say before an upload? Right now
-           it's plain.
-         - The loading state during a ~30s pipeline run. Currently one sweeping
-           bar. It could show the actual stages (reading -> extracting ->
-           pricing -> filling calendar).
-         - The "worth checking by hand" warnings block is the ugliest part of
-           the page.
+         - Empty states. What does the page say before an upload? Still plain.
+         - The loading state during a ~90s run. Currently one sweeping bar. It
+           could show real stages (reading -> extracting -> pricing -> filling
+           calendar).
+         - The "worth checking by hand" warnings block is still the ugliest
+           part of the page.
 
-[ ] 2. Mobile layout
+[ ] 2. Mobile layout                  <-- Kevin wants to demo this on a phone
        Owner: ____________
-       Written responsive but never opened on a real phone. The term spine
-       (the SVG timeline) is the risky one - it may be unreadable narrow.
+       Written responsive but never opened on a real phone. Two risky pieces:
+         - the term spine (SVG timeline) may be unreadable narrow
+         - the fan chart in the runway forecast, same problem
        Consider a stacked/vertical variant under ~600px.
-       Files: web/src/app/globals.css, web/src/app/page.tsx (TermSpine)
+       Files: web/src/app/globals.css, web/src/app/page.tsx (TermSpine),
+              web/src/components/RunwayForecast.tsx (FanChart)
 
 [ ] 3. Accessibility pass
        Owner: ____________
        - Tab through the whole page, confirm focus is always visible
-       - Screen reader on the spine (it has an aria-label, is it useful?)
+       - The timeline marks are now real buttons with labels - check they
+         actually announce usefully in a screen reader
        - Check color contrast on the faint gray text
        - Verify prefers-reduced-motion actually kills the animations
 
 [ ] 4. Pitch deck / demo video
        Owner: ____________
        The story: "a syllabus is a bill nobody itemized."
-       The two moments that land: the term spine (deadlines above the line,
-       money below it), and the runway table going red when the student runs
-       out of money mid-term. Lead with those, not with the upload box.
+       The three moments that land, in order:
+         1. The term spine - deadlines above the line, money below it
+         2. The OSAP reveal - "$18,400 on paper, $7,400 straight to the
+            school, $11,000 reaches your bank." September deposits nothing.
+         3. The runway going red - "you run short in November"
+       Lead with those, not the upload box.
+       Worth saying out loud: a single date is a guess dressed up as a fact.
+       The forecast gives a range because that is the honest answer, and the
+       extractor refuses to invent dates it cannot quote. Same principle.
 
 
 -------------------------------------------------------------------------------
 NO CODING NEEDED
 -------------------------------------------------------------------------------
 
-[ ] 5. Build the test corpus          <-- do this early, it unblocks everything
+[ ] 5. Build the test corpus          <-- HIGHEST VALUE, do this first
        Owner: ____________
        Collect 8-10 real syllabi from different faculties (arts, engineering,
-       nursing, commerce, studio courses). Save them to syllabus_examples/.
-       One is already in there: CS1026 (Western, Winter 2026). We need more
-       variety - CS1026 has only one cost line, and arts/studio/nursing
-       courses will have far messier fee structures.
-       For each one, write down by hand what a human reads as the deadlines
-       and the costs. That gives us ground truth to check the extractor
-       against.
-       What will break it, and what we most want to catch:
+       nursing, commerce, studio courses). Save to syllabus_examples/.
+       Only CS1026 (Western) is in there, and it has ONE cost line. Arts,
+       studio and nursing courses have far messier fee structures and are
+       where this will actually break.
+       For each, write down by hand what a human reads as the deadlines and
+       the costs, so we have ground truth to check against.
+       What will break it:
          - "Week 6" instead of an actual date
          - schedule tables that are images, not text
          - fees buried in a paragraph instead of a list
          - textbooks named with no price
+       This also unblocks task 12 - we cannot test 5-syllabus upload with one
+       syllabus.
 
-[~] 6. Google Cloud OAuth setup       <-- blocks the first real end-to-end test
-       Owner: Ayaan
-       Full steps in docs/DEPLOY.md. Fiddly but no code.
-       Enable Calendar API + Drive API, make an OAuth client, connect both
-       credentials inside n8n.
-       IMPORTANT: point the Calendar node at a THROWAWAY calendar first, not
-       your real one. A bad extraction should pollute something disposable.
-
-       PROGRESS: the code side is done. `npm run n8n:setup` now builds the
-       Google Calendar credential straight from GOOGLE_OAUTH_CLIENT_ID /
-       GOOGLE_OAUTH_CLIENT_SECRET in .env, so the only manual step left is
-       clicking Connect in the n8n UI (OAuth needs a browser).
-       Also fixed: the Calendar node was hardcoded to "primary" — your real
-       calendar — which contradicted the warning above. It now reads
-       GOOGLE_CALENDAR_ID from .env so a throwaway calendar is one line.
-       Events now come in violet (colorId 3, matching VIOLET = time) with
-       popup reminders at 1 day and 1 hour.
-       Still to do: the actual Google Cloud Console clicking + first real
-       end-to-end run against a throwaway calendar.
+[x] 6. Google Cloud OAuth setup - DONE
+       Owner: Ayaan (setup) + Kevin (connected the account)
+       Working end to end. `npm run n8n:setup` builds the Google Calendar
+       credential from GOOGLE_OAUTH_CLIENT_ID / _SECRET in .env; the only
+       manual step is clicking Connect in the n8n UI.
+       Events land on the calendar named by GOOGLE_CALENDAR_ID, in violet,
+       with reminders at 1 day and 1 hour.
+       NOTE for anyone self-hosting: Google caps unverified apps at 100 test
+       users who must each be added by email in the Cloud Console. That is why
+       the .ics download exists - it is the path that works for everyone.
 
 
 -------------------------------------------------------------------------------
 CODING
 -------------------------------------------------------------------------------
 
-[ ] 7. Rate limiting on /api/ingest   <-- highest priority before going public
+[ ] 7. Rate limiting on /api/ingest   <-- blocks public deploy
        Owner: ____________
-       Right now anyone with the URL can upload in a loop and burn the
-       Anthropic credits. Add a per-IP limit.
+       Anyone with the URL can upload in a loop and burn the Anthropic
+       credits. At $0.16 a run that is real money. Add a per-IP limit.
        File: web/src/app/api/ingest/route.ts (self-contained, low collision
        risk)
 
-[ ] 8. Password-gate the web app
+[ ] 8. Password-gate the web app      <-- blocks public deploy
        Owner: ____________
-       Anyone who reaches the URL can currently import to whatever calendar is
+       Anyone who reaches the URL can import to whatever calendar is
        connected. A single shared password in an env var is enough for a
        hackathon. Middleware is probably the cleanest place.
 
 [ ] 9. OCR fallback for scanned syllabi
        Owner: ____________
-       Scanned PDFs have no text layer. Right now the pipeline throws a clear
-       error telling the user to OCR it themselves. Better: detect the short
+       Scanned PDFs have no text layer. The pipeline throws a clear error
+       telling the user to OCR it themselves. Better: detect the short
        extraction and run OCR automatically.
-       Where: the "Sanitize + Guard" node already detects this case (it throws
-       when under 200 characters). Add an OCR branch before it.
+       Where: "Sanitize + Guard" already detects this (throws under 200
+       characters). Add an OCR branch before it.
 
-[x] 10. Handle "same item, two prices" - RESOLVED, no work needed
-       We expected this to break. It did not. On the real CS1026 run the
-       model emitted ONE cost ($75.00 CAD) and raised a warning:
-         "The $75.00 CAD and $52.50 USD prices are alternative ways to buy
-          the same required eTextbook; do not budget for both."
-       Leaving this noted rather than deleted, because a future syllabus may
-       still trip it. If you ever see the same item double-counted across two
-       currencies, the fix is to add an "alternatives" array to the cost
-       schema in the "Claude: Extract Schedule + Costs" node.
+[x] 10. "Same item, two prices" - RESOLVED, no work needed
+       We expected this to break. It did not. On the real CS1026 run the model
+       emitted ONE cost ($75.00 CAD) and warned:
+         "The $75.00 CAD and $52.50 USD prices are alternative ways to buy the
+          same required eTextbook; do not budget for both."
+       If a future syllabus ever double-counts across currencies, add an
+       "alternatives" array to the cost schema in the extraction node.
 
 [ ] 11. Retry / partial-failure handling
        Owner: ____________
        If Google Calendar rejects some events, the pipeline reports how many
-       failed but there's no way to retry just those. A "retry failed events"
+       failed but there is no way to retry just those. A "retry failed events"
        button would be a nice touch.
+
+[ ] 12. Multi-syllabus upload (up to 5)   <-- BIGGEST REMAINING FEATURE
+       Owner: ____________
+       HALF DONE. The merge logic is finished and tested; the UI is not built.
+
+       Already written: web/src/lib/merge.ts + scripts/check-merge.mjs
+       (22 checks passing, `npm run check:merge`). It handles:
+         - merging N results into one timeline, colour-coded per course
+         - CLUSTER WEEKS: flags any week where 3+ courses have deadlines,
+           with the combined share of your grades riding on it
+         - duplicate costs across syllabi (the same textbook written two
+           different ways) counted ONCE in the term total
+         - per-course cost breakdown, so you can see the expensive course
+
+       Still to build, all in the UI:
+         - dropzone accepting up to 5 PDFs
+         - parallel upload (Promise.allSettled against /api/ingest) - NOT
+           sequential, 5 runs back to back is a terrible demo
+         - per-file status: queued -> parsing -> done / failed, independently
+         - partial failure is non-fatal: if file 3 dies the other 4 still
+           produce a timeline, with retry on just the failed one
+         - results view calling mergeResults() and rendering clusters
+
+       Why 5 and not 10: syllabi are published per term, not once a year, and
+       a full course load is 5 per term. 10 would need syllabi that do not
+       exist yet in September.
+
+       WARNING: a full 5-file test costs ~$0.80. Build against the worked
+       example and only do one real run at the end.
+
+[ ] 13. Deploy to Render              <-- Kevin has 50 free credits
+       Owner: ____________
+       render.yaml already defines both services: the web app public, n8n as a
+       private service with no public URL.
+       DO TASKS 7 AND 8 FIRST. A public URL without rate limiting or a
+       password means anyone can drain the API credits.
+       The fiddly part: Google OAuth needs a browser callback, and a private
+       service has no public URL. docs/DEPLOY.md covers both ways round it.
+       Budget ~45 minutes.
+
+
+===============================================================================
+DEFERRED / RULED OUT
+===============================================================================
+
+ElevenLabs audio briefing - REMOVED. The organizers could not issue API keys,
+so it could never be demonstrated. Deleted rather than left disabled; it is in
+git history (search BriefingButton) if keys ever appear.
+
+Per-user Google OAuth - NOT VIABLE for this hackathon. Calendar is a sensitive
+scope, so unverified apps are capped at 100 hand-listed test users, and
+lifting that needs Google verification (privacy policy, terms of service,
+domain, and a review measured in weeks). The .ics export is the answer.
+
+n8n Cloud Pro - code redeemed, NOT migrated. Migration means recreating
+credentials, re-importing the workflow, and changing the Google OAuth redirect
+URI, which would break the working calendar integration. Worth doing only if
+we deploy publicly and want a managed n8n. ~20 minutes.
+
+Native mobile app - not worth it. The site is responsive; judges can open it
+on a phone. Task 2 is the useful version of this.
 
 
 ===============================================================================
@@ -216,21 +289,26 @@ COORDINATION
 ===============================================================================
 
 High collision risk - tell the group before editing:
-  - n8n/syllabus-to-calendar.workflow.json
+  - n8n/syllabus-to-calendar.workflow.json   (one 8,000-character line; a
+    conflict here is genuinely painful to resolve)
   - web/src/app/page.tsx
 
 Low collision risk - safe to grab:
-  - web/src/app/globals.css        (styling only)
+  - web/src/app/globals.css        (append at the END, never mid-file)
   - web/src/app/api/ingest/route.ts
-  - docs/*
-  - docs/samples/*
+  - web/src/lib/*                  (mostly new files)
+  - docs/*, syllabus_examples/*
+
+Work on a branch and prefer NEW files over editing existing ones. A new
+component plus one line wiring it in merges cleanly almost every time.
 
 Run it locally:
   npm run gen:secrets
   npm --prefix web install
   npm run n8n:up          # n8n at http://localhost:5678
+  npm run n8n:setup       # credentials + workflow, only needed once
   npm run web:dev         # app at http://localhost:3000
 
-No Google account connected yet? Click "See a worked example" on the page to
-walk the entire results view with realistic data and no credentials. Good
-enough to design against.
+n8n must be running for uploads to work - it IS the pipeline. Two things work
+without it, useful if Docker dies mid-demo: "See a worked example", and the
+.ics download on any result already on screen.

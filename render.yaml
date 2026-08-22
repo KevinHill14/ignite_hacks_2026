@@ -144,11 +144,32 @@ services:
       # largest request the app can actually send.
       - key: N8N_PAYLOAD_SIZE_MAX
         value: "16"
-      # WEBHOOK_URL is deliberately NOT set here. It only affects the URLs n8n
-      # advertises for its own webhooks, and nothing depends on those: the web
-      # app reaches n8n by internal service name, and the Drive trigger ships
-      # disabled. Marking it `sync: false` made Render demand a value that
-      # cannot exist until the service has a URL, which fails the sync.
+      # Both of these are REQUIRED for Google OAuth, and the reason is not
+      # obvious. n8n issues a `state` token when you click Connect, then
+      # validates it when Google redirects back. It builds that flow from its
+      # configured base URL — and with neither variable set it believes it
+      # lives at http://localhost:5678 (which the boot log says out loud:
+      # "Editor is now accessible via: http://localhost:5678"). State gets
+      # issued against one origin and checked against another, and the browser
+      # lands on:
+      #
+      #   Error: The OAuth callback state is invalid!
+      #
+      # with no further detail, which reads like a Google problem and is not.
+      #
+      # These were previously left unset on the theory that they only affect
+      # advertised webhook URLs, which nothing depends on — true as far as it
+      # went, and wrong about OAuth. They could not be filled in earlier
+      # because the value is the service's own hostname, which does not exist
+      # until the first successful deploy. Hardcoded rather than `sync: false`
+      # because a blueprint sync fails when it has to prompt for a value.
+      #
+      # The -wnw8 suffix is Render's, added because the name syllabus-n8n was
+      # already taken globally. It is part of the hostname, not a typo.
+      - key: WEBHOOK_URL
+        value: https://syllabus-n8n-wnw8.onrender.com
+      - key: N8N_EDITOR_BASE_URL
+        value: https://syllabus-n8n-wnw8.onrender.com
       #
       # If you later enable Google OAuth or the Drive trigger, add it by hand
       # in the dashboard once you know the host.

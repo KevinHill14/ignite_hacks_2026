@@ -42,7 +42,16 @@ export async function POST(request: NextRequest) {
    */
   const key = clientKey(request.headers);
   const perMinute = rateLimit(`${key}:min`, {
-    limit: Number(process.env.RATE_LIMIT_PER_MINUTE) || 3,
+    /*
+     * Six, not three. A full course load is five files uploaded at once, which
+     * is one user action producing five requests — a limit of three would
+     * reject two of them and make the product's headline feature fail against
+     * its own guard. Six leaves room for one retry on a failed file.
+     *
+     * The daily cap is the real budget protection; this one exists to stop a
+     * stuck refresh, and a refresh loop trips six just as surely as three.
+     */
+    limit: Number(process.env.RATE_LIMIT_PER_MINUTE) || 6,
     windowMs: 60_000,
   });
   const perDay = rateLimit(`${key}:day`, {

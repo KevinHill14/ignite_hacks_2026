@@ -117,10 +117,39 @@ function costKey(label: string): string {
       // Ordinals in a course-materials list are almost always edition markers.
       .replace(/\b\d+(st|nd|rd|th)\b/g, " ")
       .replace(/\b(ed|edn|edition|cdn|canadian|intl|international|vol|volume)\b/g, " ")
+      // Packaging words that describe how a thing is sold rather than what it
+      // is. One syllabus writes "iClicker Cloud subscription", another
+      // "iClicker Cloud (1-term licence)" — same product, and neither word
+      // distinguishes it from anything.
+      .replace(/\b(subscription|licence|license|access|code|pass|plan|membership|term)\b/g, " ")
       .replace(/[^a-z0-9 ]+/g, " ")
       .replace(/\s+/g, " ")
       .trim()
   );
+}
+
+/**
+ * Are two normalised labels the same product?
+ *
+ * Exact match is too strict once one syllabus buries a qualifier in brackets
+ * and the other spells it out — the bracketed text is stripped wholesale, so
+ * the two normalise to different lengths. Subset matching handles that: if
+ * every word of the shorter label appears in the longer, they are describing
+ * the same thing.
+ *
+ * The two-token floor is what stops it over-matching. Without it a bare
+ * "textbook" would swallow every textbook in the term, which would be a far
+ * worse error than missing a duplicate — it would silently delete real costs
+ * from the total.
+ */
+function sameProduct(a: string, b: string): boolean {
+  if (a === b) return true;
+  const A = new Set(a.split(" ").filter(Boolean));
+  const B = new Set(b.split(" ").filter(Boolean));
+  const [small, large] = A.size <= B.size ? [A, B] : [B, A];
+  if (small.size < 2) return false;
+  for (const token of small) if (!large.has(token)) return false;
+  return true;
 }
 
 function courseKeyFor(course: CourseInfo, sourceName: string, index: number): string {
@@ -189,11 +218,15 @@ export function mergeResults(results: IngestResult[]): MergedResult {
 
   /* ----------------------------------------------------------- duplicates */
 
+  // Group by product rather than by exact normalised string, so a label that
+  // lost a qualifier to bracket-stripping still lands with its twin.
   const byCost = new Map<string, MergedCost[]>();
   for (const c of costs) {
     const k = costKey(c.label);
     if (!k) continue;
-    byCost.set(k, [...(byCost.get(k) ?? []), c]);
+    const existing = [...byCost.keys()].find((seen) => sameProduct(seen, k));
+    const bucket = existing ?? k;
+    byCost.set(bucket, [...(byCost.get(bucket) ?? []), c]);
   }
 
   const duplicates: DuplicateCost[] = [];
@@ -223,9 +256,13 @@ export function mergeResults(results: IngestResult[]): MergedResult {
       continue;
     }
     const k = costKey(c.label);
-    if (duplicates.some((d) => costKey(d.label) === k)) {
-      if (countedDuplicates.has(k)) continue;
-      countedDuplicates.add(k);
+    // Must match the same way the grouping did, or an item detected as shared
+    // would still be billed twice — the worse of the two failures.
+    const dupe = duplicates.find((d) => sameProduct(costKey(d.label), k));
+    if (dupe) {
+      const bucket = costKey(dupe.label);
+      if (countedDuplicates.has(bucket)) continue;
+      countedDuplicates.add(bucket);
     }
     const cur = c.currency || "UNKNOWN";
     totals[cur] = totals[cur] ?? { mandatory: 0, optional: 0, all: 0 };

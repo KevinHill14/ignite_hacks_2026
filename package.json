@@ -18,7 +18,9 @@
     "check:income": "node --experimental-strip-types scripts/check-income.mjs",
     "check:merge": "node --experimental-strip-types scripts/check-merge.mjs",
     "check:auth": "node --experimental-strip-types scripts/check-auth.mjs",
-    "check:demo": "node --experimental-strip-types scripts/verify-demo.mjs"
+    "check:demo": "node --experimental-strip-types scripts/verify-demo.mjs",
+    "check:dedupe": "node --experimental-strip-types scripts/check-dedupe.mjs",
+    "test:demo-set": "node --experimental-strip-types scripts/run-demo-set.mjs"
   },
   "engines": {
     "node": ">=20"

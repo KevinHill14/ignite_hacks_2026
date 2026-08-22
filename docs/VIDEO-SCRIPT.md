@@ -5,9 +5,21 @@ a time. Say it your way — if a line feels stiff in your mouth, change it.
 
 **Total: ~2:50.** Leaves room to breathe.
 
-Before recording: `npm run n8n:up`, then `npm run web:dev`, and do one
-throwaway upload to warm everything up. Have the five demo PDFs in a folder
-you can drag from in one motion.
+Before recording, pick one of two paths:
+
+- **Worked example (safest).** Go to https://syllabus-web.onrender.com, log in,
+  and click **a full course load** under the upload box. Renders the whole
+  product instantly, no API call, cannot fail on camera. Use the numbers in the
+  box below, because they differ from a live five-file run.
+- **Live upload.** `npm run n8n:up`, then `npm run web:dev`, and do one
+  throwaway upload to warm everything up. Have the five demo PDFs from
+  `demo_syllabi_corpus/` in a folder you can drag from in one motion.
+
+> **The worked example has three courses, not five.** Its real numbers are:
+> crunch week **Oct 19 to 25**, **3 of 3** courses, **25%** of the term's
+> grades; iClicker shared at **$35**; per course CHEM 201 **$423.50**, PSYC 202
+> **$202**, MATH 240 **$0**; term total **$590.50**. The lines below are
+> written for these.
 
 ---
 
@@ -38,12 +50,13 @@ the least money you'll have all year."
 
 "So we built Termsheet.
 
-You drop in your syllabi — up to five, a full course load — and it tells you
-two things. When everything's due. And what the term actually costs."
+You drop in your syllabi, up to five, a full course load, and it tells you two
+things. When everything's due. And what the term actually costs."
 
-> **[Drag all five PDFs in at once. Let the queue appear.]**
+> **[Live upload: drag the PDFs in at once, let the queue appear.]**
+> **[Worked example: click "a full course load".]**
 
-"All five at once, in parallel. About twenty seconds."
+"All of them at once, in parallel. About twenty seconds."
 
 ---
 
@@ -62,10 +75,10 @@ busy week and see what that same week costs you."
 syllabus it came from. Because if it can't quote the source, it doesn't put it
 on your calendar."
 
-> **[Click a cost bar]**
+> **[Click the tall September 14 cost bar]**
 
-"Same for the money. That's a hundred and eighty-four ninety-five, and there's
-the sentence in the syllabus that says so."
+"Same for the money. Five hundred and fifty-two fifty landing in one week, and
+every line in there quotes the syllabus it came out of."
 
 ---
 
@@ -75,11 +88,11 @@ the sentence in the syllabus that says so."
 
 "Now here's the part you can't get from any single syllabus.
 
-The week of October nineteenth, three of my five courses all want something.
-That's fourteen percent of everything I'm graded on this term, in four days.
+The week of October nineteenth, all three of my courses want something. That's
+a quarter of everything I'm graded on this term, in four days.
 
-And that's not just a bad week academically. That's a week I spend more and
-work fewer shifts."
+And that's a bad week academically and financially at the same time. It's a
+week I spend more and work fewer shifts."
 
 > **[Scroll to per-course breakdown, point at the duplicate]**
 
@@ -132,16 +145,26 @@ realistically. Course costs stay fixed, because those we actually know."
 
 > **[Point at the fan chart]**
 
-"That's the uncertainty widening over the term — and those hard drops are the
+"That's the uncertainty widening over the term, and those hard drops are the
 textbook and the lab kit landing.
 
 Nineteen percent chance I run short. Which means: in two thousand simulated
 terms, I went below zero in three hundred and eighty-four of them."
 
+> **Read the two numbers off your own screen.** The risk percentage and the
+> run count depend on the balance and income you type in, so they will not be
+> 19% and 384 unless you happen to enter the same figures. Say whatever the
+> page says. The pairing is the point, a percentage restated as a count.
+
 > **[Click "Drop" on the expensive course]**
 
-"And if I'm thinking about dropping a course — there's what it saves, and
-there goes the crunch week."
+"And if I'm thinking about dropping a course, there's what it saves, and there
+goes the crunch week."
+
+> Drop **CHEM 201**, the expensive one. The panel will read **$388.50 less to
+> pay** and the October 19 crunch week disappears, because it needed all three
+> courses to exist. Any of the three clears it, so CHEM is the one to pick:
+> biggest saving and the crunch week goes with it.
 
 ---
 

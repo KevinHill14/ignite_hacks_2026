@@ -11,6 +11,11 @@ function ev(
   kind: PlannedEvent["kind"],
   weight: number | null,
   time = "23:59",
+  // The line from the syllabus this was taken from. Not decoration: the
+  // product's central claim is that nothing is reported without a quote
+  // backing it, and a demo with empty quotes quietly contradicts that at
+  // exactly the moment someone clicks an item to check.
+  quote = "",
 ): PlannedEvent {
   const [h, m] = time.split(":").map(Number);
   const end = new Date(`${date}T${time}:00`);
@@ -20,7 +25,7 @@ function ev(
     start: `${date}T${time}:00`,
     end: `${date}T${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}:00`,
     timezone: TZ,
-    description: "",
+    description: quote,
     kind,
     date,
     weightPercent: weight,
@@ -34,6 +39,7 @@ function cost(
   neededBy: string | null,
   mandatory = true,
   category: PlannedCost["category"] = "textbook",
+  quote = "",
 ): PlannedCost {
   return {
     label,
@@ -44,7 +50,7 @@ function cost(
     neededBy,
     month: neededBy ? neededBy.slice(0, 7) : null,
     notes: "",
-    sourceQuote: "",
+    sourceQuote: quote,
     confidence: 0.9,
   };
 }
@@ -166,39 +172,57 @@ export const DEMO_MULTI: IngestResult[] = [
     "CHEM 201",
     "Organic Chemistry I",
     [
-      ev("CHEM 201", "2026-09-25", "Lab report 1", "lab", 5),
-      ev("CHEM 201", "2026-10-21", "Midterm 1", "exam", 20, "19:00"),
-      ev("CHEM 201", "2026-11-18", "Midterm 2", "exam", 20, "19:00"),
-      ev("CHEM 201", "2026-12-04", "Lab practical", "lab", 15),
+      ev("CHEM 201", "2026-09-25", "Lab report 1", "lab", 5, "23:59",
+        "Lab Report 1 is due Friday, September 25 by 11:59 p.m. and is worth 5% of the final grade."),
+      ev("CHEM 201", "2026-10-21", "Midterm 1", "exam", 20, "19:00",
+        "Midterm 1: Wednesday, October 21, 7:00-9:00 p.m. Worth 20% of the final grade."),
+      ev("CHEM 201", "2026-11-18", "Midterm 2", "exam", 20, "19:00",
+        "Midterm 2: Wednesday, November 18, 7:00-9:00 p.m. Worth 20% of the final grade."),
+      ev("CHEM 201", "2026-12-04", "Lab practical", "lab", 15, "23:59",
+        "The laboratory practical will be held during the final lab period, December 4 (15%)."),
     ],
     [
-      cost("Organic Chemistry, 9th ed. (used)", 315.5, "2026-09-14"),
-      cost("iClicker Cloud subscription", 35, "2026-09-14", true, "courseware"),
-      cost("Lab goggles and coat", 48, "2026-09-18", true, "lab_materials"),
-      cost("Refundable locker deposit", 25, "2026-09-18", true, "other"),
+      cost("Organic Chemistry, 9th ed. (used)", 315.5, "2026-09-14", true, "textbook",
+        "Required: Organic Chemistry, 9th edition. New $412.00, used copies $315.50 at the Campus Bookstore."),
+      cost("iClicker Cloud subscription", 35, "2026-09-14", true, "courseware",
+        "An iClicker Cloud subscription ($35) is required for in-class participation marks."),
+      cost("Lab goggles and coat", 48, "2026-09-18", true, "lab_materials",
+        "Students must supply their own splash goggles and lab coat (approx. $48 from the Chemistry Store) before the first lab."),
+      cost("Refundable locker deposit", 25, "2026-09-18", true, "other",
+        "A $25 refundable deposit is charged for your lab locker key and returned at the end of term."),
     ],
   ),
   course(
     "PSYC 202",
     "Research Methods",
     [
-      ev("PSYC 202", "2026-10-02", "Method critique", "assignment", 10),
-      ev("PSYC 202", "2026-10-22", "Midterm", "exam", 25, "10:00"),
-      ev("PSYC 202", "2026-11-20", "Final paper", "project", 30),
+      ev("PSYC 202", "2026-10-02", "Method critique", "assignment", 10, "23:59",
+        "Method Critique (10%) due October 2 by 11:59 p.m. via onQ."),
+      ev("PSYC 202", "2026-10-22", "Midterm", "exam", 25, "10:00",
+        "Midterm examination: Thursday, October 22, 10:00-11:20 a.m., worth 25%."),
+      ev("PSYC 202", "2026-11-20", "Final paper", "project", 30, "23:59",
+        "The final research paper (30%) is due November 20 at 11:59 p.m."),
     ],
     [
-      cost("Research Methods in Psychology (used)", 167, "2026-09-14"),
-      // Same subscription as CHEM 201. One covers both courses.
-      cost("iClicker Cloud subscription", 35, "2026-09-14", true, "courseware"),
+      cost("Research Methods in Psychology (used)", 167, "2026-09-14", true, "textbook",
+        "Textbook: Research Methods in Psychology, 5th ed. Used copies from $167.00."),
+      // Same subscription as CHEM 201. One covers both courses. The two
+      // syllabi word it differently, which is the case the matcher has to
+      // get right, so the quotes here are deliberately not identical.
+      cost("iClicker Cloud subscription", 35, "2026-09-14", true, "courseware",
+        "Participation is recorded through iClicker Cloud. If you are already subscribed for another course, that subscription covers this one."),
     ],
   ),
   course(
     "MATH 240",
     "Linear Algebra",
     [
-      ev("MATH 240", "2026-10-09", "Problem set 3", "assignment", 5),
-      ev("MATH 240", "2026-10-23", "Midterm", "exam", 30, "18:30"),
-      ev("MATH 240", "2026-11-27", "Problem set 6", "assignment", 5),
+      ev("MATH 240", "2026-10-09", "Problem set 3", "assignment", 5, "23:59",
+        "Problem Set 3 due Friday, October 9 (5%). Submit through Crowdmark."),
+      ev("MATH 240", "2026-10-23", "Midterm", "exam", 30, "18:30",
+        "Midterm: Friday, October 23, 6:30-8:30 p.m. Worth 30% of the final grade."),
+      ev("MATH 240", "2026-11-27", "Problem set 6", "assignment", 5, "23:59",
+        "Problem Set 6 due Friday, November 27 (5%). Submit through Crowdmark."),
     ],
     // Deliberately free: open textbook, free software, no clicker.
     [],

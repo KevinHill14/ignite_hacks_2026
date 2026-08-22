@@ -124,11 +124,14 @@ In n8n: **Workflows → Import from File** →
 `n8n/syllabus-to-calendar.workflow.json`, then add two credentials —
 **Anthropic** on the *Claude: Extract Schedule + Costs* node, and **Header
 Auth** on the *Webhook: Manual Upload* node with name `X-Ingest-Token` and the
-`INGEST_TOKEN` value from your `.env`. Finally toggle **Inactive → Active**,
-top-right, and restart n8n.
+`INGEST_TOKEN` value from your `.env`. Finally hit **Publish**, top right.
 
-Until it is Active, n8n serves only a one-shot *test* URL and the app gets a
+Until it is published, n8n serves only a one-shot *test* URL and the app gets a
 404 reading `The pipeline is not listening`.
+
+If **Publish** is greyed out, hover it. n8n refuses to publish while any node
+has an unresolved credential, and it counts nodes that never run, including the
+disabled Google Drive ones. The tooltip is the only place it tells you.
 </details>
 
 ### 3. Test

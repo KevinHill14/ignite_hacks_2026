@@ -4,6 +4,28 @@ Pick what you want. Put your name next to it in this file and push, so we
 don't collide.
 ===============================================================================
 
+FIRST TIME HERE? READ docs/TEAMMATE-SETUP.md
+--------------------------------------------
+It assumes you have never used an API key or a .env file, and it tells you
+whether you even need one. Most tasks on this list do NOT.
+
+Short version if you are doing design, docs, mobile, or the pitch:
+
+    git clone https://github.com/KevinHill14/ignite_hacks_2026.git
+    cd ignite_hacks_2026
+    npm run gen:secrets
+    npm --prefix web install
+    npm run web:dev
+
+then open http://localhost:3000 and click "See a worked example". That renders
+the entire product with sample data - no API key, no Google account, no cost.
+
+Do NOT ask Kevin for his API key. If you genuinely need one - only the tasks
+that actually run the extraction pipeline do - make your own free account at
+https://console.anthropic.com. Separate keys mean separate bills and no
+group-wide rotation when one leaks.
+
+
 WHAT'S ALREADY DONE
 -------------------
 - n8n pipeline (13 nodes): upload or Google Drive folder -> extract PDF text
@@ -13,12 +35,22 @@ WHAT'S ALREADY DONE
 - Security pass: see docs/SECURITY.md
 - Docs: README.md, docs/DEPLOY.md, docs/SECURITY.md
 
-NOT YET TESTED
---------------
-Nobody has run a real syllabus all the way through yet. That needs Google
-OAuth connected and a real Anthropic API key. Everything before that point is
-verified; the live path is not. Task 2 unblocks this, so it's the most
-valuable thing on the list.
+VERIFIED WORKING
+----------------
+The full pipeline has been run end to end on a real syllabus (Western
+CS1026B, Winter 2026):
+
+    18 deadlines with grade weights, 5 costs, 12 warnings
+    ~40-75 seconds per run, ~$0.05 on claude-sonnet-5
+
+Notable: the syllabus prices one required eTextbook two ways ($75.00 CAD at
+the bookstore, $52.50 USD direct). The extractor emitted ONE cost and warned
+not to budget for both. It also refused to invent a date for the final exam
+(the Registrar sets it in March) and dropped the entry rather than guessing,
+and it caught a stale term code in the bookstore link.
+
+Still untested: Google Calendar writes (nobody has connected OAuth yet, so
+calendar events currently report as failed while everything else works).
 
 
 ===============================================================================

@@ -1914,3 +1914,26 @@ select.field__input {
   color: var(--ink-faint);
   white-space: nowrap;
 }
+
+.levers__lede {
+  margin: 8px 0 4px;
+  font-size: 13px;
+  color: var(--ink-faint);
+  max-width: 60ch;
+}
+
+.levers__name {
+  display: grid;
+  gap: 1px;
+}
+
+.levers__sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink-faint);
+}
+
+.levers__effect strong {
+  color: var(--ink);
+}

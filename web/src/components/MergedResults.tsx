@@ -183,8 +183,9 @@ export function MergedResults({
                   {shortDate(c.weekStart)} – {shortDate(c.weekEnd)}
                 </span>
                 <span className="cluster__weight">
-                  {c.courseKeys.length} courses
-                  {c.totalWeight > 0 && ` · ${Math.round(c.totalWeight)}% of your grades`}
+                  {c.courseKeys.length} of {merged.courses.length} courses
+                  {c.shareOfTerm > 0 &&
+                    ` · ${Math.round(c.shareOfTerm * 100)}% of your term's grades`}
                 </span>
               </div>
               <ul className="cluster__list">

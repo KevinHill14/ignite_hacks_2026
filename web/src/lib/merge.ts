@@ -36,8 +36,21 @@ export interface ClusterWeek {
   weekEnd: string;
   courseKeys: string[];
   events: MergedEvent[];
-  /** Combined share of final grades riding on this one week. */
+  /**
+   * Raw sum of per-course weights. Kept for reference but NOT for display:
+   * each course's weights are a share of that course's own grade, so adding
+   * 25% of chemistry to 30% of maths gives 55% of nothing. With five courses
+   * it can exceed 100%, which is plainly nonsense on screen.
+   */
   totalWeight: number;
+  /**
+   * The figure worth showing. A full load of N courses offers N x 100 grade
+   * points in total, so this week's share of the entire term is
+   * totalWeight / (N * 100). Bounded by definition, and it answers the
+   * question a student is actually asking: how much of my term is riding on
+   * this one week?
+   */
+  shareOfTerm: number;
 }
 
 export interface DuplicateCost {
@@ -160,12 +173,16 @@ export function mergeResults(results: IngestResult[]): MergedResult {
     // Three courses converging is the threshold where a week stops being busy
     // and starts being a problem. Two is a normal Tuesday.
     if (keys.length < 3) continue;
+    const totalWeight = weekEvents.reduce((s, e) => s + (e.weightPercent ?? 0), 0);
     clusters.push({
       weekStart,
       weekEnd: addDays(weekStart, 6),
       courseKeys: keys,
       events: weekEvents.slice().sort((a, b) => a.start.localeCompare(b.start)),
-      totalWeight: weekEvents.reduce((s, e) => s + (e.weightPercent ?? 0), 0),
+      totalWeight,
+      // Denominator is every course in the load, not just the ones colliding:
+      // the question is what share of the whole term lands here.
+      shareOfTerm: courses.length > 0 ? totalWeight / (courses.length * 100) : 0,
     });
   }
   clusters.sort((a, b) => a.weekStart.localeCompare(b.weekStart));
@@ -248,8 +265,10 @@ export function mergeResults(results: IngestResult[]): MergedResult {
   }
   for (const c of clusters) {
     warnings.push(
-      `Week of ${c.weekStart}: ${c.courseKeys.length} courses have deadlines` +
-        (c.totalWeight > 0 ? `, worth ${Math.round(c.totalWeight)}% of your grades combined` : "") +
+      `Week of ${c.weekStart}: ${c.courseKeys.length} of your ${courses.length} courses have deadlines` +
+        (c.shareOfTerm > 0
+          ? `, carrying ${Math.round(c.shareOfTerm * 100)}% of everything you are graded on this term`
+          : "") +
         `. Expect to spend more that week and work fewer shifts.`,
     );
   }

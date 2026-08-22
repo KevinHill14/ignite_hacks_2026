@@ -819,20 +819,37 @@ export function RunwayForecast({
 
               {forecast.levers.length > 0 && (
                 <div className="levers">
-                  <p className="eyebrow">What moves the needle most</p>
+                  <p className="eyebrow">If you had to cut one thing</p>
+                  <p className="levers__lede">
+                    Each row re-runs the whole term without that spending, so
+                    the numbers are what actually happens if you cut it — not a
+                    ranking.
+                  </p>
                   <ul>
-                    {forecast.levers.slice(0, 3).map((l) => (
-                      <li key={l.id}>
-                        <span className="levers__name">Drop {l.label.toLowerCase()}</span>
-                        <span className="levers__effect">
-                          {l.deltaProbBroke >= 0.01
-                            ? `−${Math.round(l.deltaProbBroke * 100)} pts of risk`
-                            : "no real risk change"}
-                          {" · "}
-                          {money(l.deltaEndBalance, currency)} more by term end
-                        </span>
-                      </li>
-                    ))}
+                    {forecast.levers.slice(0, 3).map((l) => {
+                      const after = Math.max(0, Math.round((forecast.probBroke - l.deltaProbBroke) * 100));
+                      return (
+                        <li key={l.id}>
+                          <span className="levers__name">
+                            Cut {l.label.toLowerCase()}
+                            <span className="levers__sub">
+                              {money(l.monthly, currency)} a month
+                            </span>
+                          </span>
+                          <span className="levers__effect">
+                            <strong>{money(l.deltaEndBalance, currency)} more</strong> by
+                            term end
+                            {/* Before -> after is legible; "-19 pts" is not. */}
+                            {l.deltaProbBroke >= 0.01 && (
+                              <>
+                                {" · risk "}
+                                {risk}% → {after}%
+                              </>
+                            )}
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}

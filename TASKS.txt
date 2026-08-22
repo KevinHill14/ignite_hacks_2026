@@ -123,24 +123,15 @@ CODING
        Where: the "Sanitize + Guard" node already detects this case (it throws
        when under 200 characters). Add an OCR branch before it.
 
-[ ] 10. Handle "same item, two prices" (FOUND IN A REAL SYLLABUS)
-       Owner: ____________
-       CS1026 lists ONE required item (the zyBooks access key) with TWO
-       purchase options in different currencies:
-         "The price of the text from the Book Store is $75.00 CDN.
-          The price of the text from zyBook's site is $52.50 USD."
-       The schema currently allows one amount + one currency per item, so the
-       model will likely emit two separate cost entries. The per-currency
-       totals then read as CAD $75.00 AND USD $52.50, which looks like the
-       student pays both. On a money screen that is just wrong.
-       Options:
-         a) add an optional "alternatives" array to the cost schema
-         b) instruct the model to pick the student's local currency and put
-            the other option in notes
-       (b) is much less work and probably good enough for the demo.
-       Files: n8n/syllabus-to-calendar.workflow.json (the schema is inside
-       the "Claude: Extract Schedule + Costs" node), then the totals logic in
-       "Validate + Build Plan"
+[x] 10. Handle "same item, two prices" - RESOLVED, no work needed
+       We expected this to break. It did not. On the real CS1026 run the
+       model emitted ONE cost ($75.00 CAD) and raised a warning:
+         "The $75.00 CAD and $52.50 USD prices are alternative ways to buy
+          the same required eTextbook; do not budget for both."
+       Leaving this noted rather than deleted, because a future syllabus may
+       still trip it. If you ever see the same item double-counted across two
+       currencies, the fix is to add an "alternatives" array to the cost
+       schema in the "Claude: Extract Schedule + Costs" node.
 
 [ ] 11. Retry / partial-failure handling
        Owner: ____________

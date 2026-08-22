@@ -89,6 +89,17 @@
     },
     {
       "parameters": {
+        "jsCode": "/**\n * Normalise the uploaded file onto a known binary property.\n *\n * The two entry points disagree about naming. The Drive node writes to\n * `syllabus` because we ask it to, but the Webhook node derives the property\n * from the multipart field and appends an index — a file posted as `syllabus`\n * arrives as `syllabus0`. Hardcoding either name breaks the other path, so\n * find whatever actually arrived and standardise it here.\n */\n\nconst out = [];\n\nfor (const item of $input.all()) {\n  const binary = item.binary || {};\n  const keys = Object.keys(binary);\n\n  if (keys.length === 0) {\n    throw new Error(\n      'No file arrived with the request. Upload a PDF, or check that the ' +\n      'form field is named \"syllabus\".'\n    );\n  }\n\n  // Prefer an exact match, then anything that declares itself a PDF, then\n  // simply the first attachment.\n  const key =\n    (keys.includes('syllabus') && 'syllabus') ||\n    keys.find((k) => String(binary[k].mimeType || '').includes('pdf')) ||\n    keys[0];\n\n  out.push({\n    json: {\n      ...item.json,\n      arrivedAs: key,\n      fileName: binary[key].fileName || item.json.fileName || 'syllabus.pdf',\n    },\n    binary: { syllabus: binary[key] },\n  });\n}\n\nreturn out;\n"
+      },
+      "id": "a1000000-0000-4000-8000-00000000000e",
+      "name": "Find the Uploaded File",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-320, 200],
+      "notes": "Both entry points feed through here so the rest of the pipeline can rely on the file being at `syllabus` regardless of how it arrived."
+    },
+    {
+      "parameters": {
         "operation": "pdf",
         "binaryPropertyName": "syllabus",
         "options": {}
@@ -246,7 +257,7 @@
     },
     {
       "parameters": {
-        "jsCode": "/**\n * Assemble the response the web UI renders.\n *\n * Counts calendar successes and failures separately: partial success is the\n * common real-world outcome and silently reporting \"done\" would be a lie.\n */\n\nconst plan = $('Validate + Build Plan').first().json;\nconst results = $input.first().json.data || [];\n\nlet created = 0;\nconst failed = [];\n\nfor (const r of results) {\n  if (r?.error) {\n    failed.push({\n      summary: r.summary ?? 'unknown event',\n      reason: String(r.error?.message ?? r.error).slice(0, 300),\n    });\n  } else if (r?.id || r?.htmlLink) {\n    created += 1;\n  }\n}\n\nconst warnings = [...plan.warnings];\nif (failed.length) {\n  warnings.push(`${failed.length} event${failed.length === 1 ? '' : 's'} could not be added to your calendar.`);\n}\n\nreturn [{\n  json: {\n    ok: true,\n    course: plan.course,\n    sourceName: plan.sourceName,\n    timezone: plan.timezone,\n    calendar: {\n      created,\n      attempted: plan.events.length,\n      failed,\n    },\n    events: plan.events,\n    costs: plan.costs,\n    timeline: plan.timeline,\n    totals: plan.totals,\n    stats: plan.stats,\n    warnings,\n  },\n}];\n"
+        "jsCode": "/**\n * Assemble the response the web UI renders.\n *\n * Counts calendar successes and failures separately: partial success is the\n * common real-world outcome and silently reporting \"done\" would be a lie.\n */\n\nconst plan = $('Validate + Build Plan').first().json;\nconst results = $input.first().json.data || [];\n\nlet created = 0;\nconst failed = [];\n\n// A failed Google Calendar item carries the error, not the event fields, so\n// recover the human-readable name by position from the plan we sent in.\nresults.forEach((r, i) => {\n  if (r?.error) {\n    failed.push({\n      summary: plan.events[i]?.summary ?? r.summary ?? 'an event',\n      reason: String(r.error?.message ?? r.error).slice(0, 300),\n    });\n  } else if (r?.id || r?.htmlLink) {\n    created += 1;\n  }\n});\n\nconst warnings = [...plan.warnings];\nif (failed.length) {\n  warnings.push(`${failed.length} event${failed.length === 1 ? '' : 's'} could not be added to your calendar.`);\n}\n\nreturn [{\n  json: {\n    ok: true,\n    course: plan.course,\n    sourceName: plan.sourceName,\n    timezone: plan.timezone,\n    calendar: {\n      created,\n      attempted: plan.events.length,\n      failed,\n    },\n    events: plan.events,\n    costs: plan.costs,\n    timeline: plan.timeline,\n    totals: plan.totals,\n    stats: plan.stats,\n    warnings,\n  },\n}];\n"
       },
       "id": "a1000000-0000-4000-8000-00000000000b",
       "name": "Build Response",
@@ -271,13 +282,16 @@
   ],
   "connections": {
     "Webhook: Manual Upload": {
+      "main": [[{ "node": "Find the Uploaded File", "type": "main", "index": 0 }]]
+    },
+    "Find the Uploaded File": {
       "main": [[{ "node": "Extract Text from PDF", "type": "main", "index": 0 }]]
     },
     "Drive: New Syllabus Dropped": {
       "main": [[{ "node": "Drive: Download File", "type": "main", "index": 0 }]]
     },
     "Drive: Download File": {
-      "main": [[{ "node": "Extract Text from PDF", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Find the Uploaded File", "type": "main", "index": 0 }]]
     },
     "Extract Text from PDF": {
       "main": [[{ "node": "Sanitize + Guard", "type": "main", "index": 0 }]]

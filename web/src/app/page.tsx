@@ -749,6 +749,11 @@ function Results({
 }) {
   const { course, events, costs, calendar, warnings, stats } = result;
 
+  // When every event fails for the same reason it is one configuration
+  // problem, not N problems. Listing it N times buries the real warnings.
+  const failureReasons = new Set(calendar.failed.map((f) => f.reason));
+  const collapseFailures = calendar.failed.length > 3 && failureReasons.size === 1;
+
   return (
     <div className="reveal">
       {/* receipt header */}
@@ -888,11 +893,18 @@ function Results({
             {warnings.map((w, i) => (
               <li key={`w-${i}`}>{w}</li>
             ))}
-            {calendar.failed.map((f, i) => (
-              <li key={`f-${i}`}>
-                Could not add “{f.summary}” to your calendar.
+            {collapseFailures ? (
+              <li key="f-all">
+                None of the {calendar.failed.length} events reached your
+                calendar. Everything above was still extracted.
               </li>
-            ))}
+            ) : (
+              calendar.failed.map((f, i) => (
+                <li key={`f-${i}`}>
+                  Could not add “{f.summary}” to your calendar.
+                </li>
+              ))
+            )}
           </ul>
         </section>
       )}

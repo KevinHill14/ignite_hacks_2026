@@ -17,8 +17,8 @@ tmp/
 # accident. The example corpus is the one deliberate exception.
 *.pdf
 *.docx
-!syllabus_examples/*.pdf
-!syllabus_examples/*.docx
+!syllabus_examples/**/*.pdf
+!syllabus_examples/**/*.docx
 
 # --- Node ------------------------------------------------------------------
 node_modules/

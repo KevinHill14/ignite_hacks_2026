@@ -78,6 +78,9 @@ export interface IngestResult {
     pricedCount: number;
     unpricedCount: number;
     mixedCurrency: boolean;
+    /** Which model actually answered. Surfaced so a silent fallback to a
+     *  different model than configured cannot go unnoticed. */
+    model?: string | null;
     inputTokens: number | null;
     outputTokens: number | null;
   };

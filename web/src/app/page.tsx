@@ -7,8 +7,10 @@ import type {
   PlannedCost,
   PlannedEvent,
 } from "@/lib/types";
-import { DEMO_RESULT } from "@/lib/demo";
+import { DEMO_RESULT, DEMO_MULTI } from "@/lib/demo";
 import { buildIcs } from "@/lib/ics";
+import { UploadQueue, type UploadSlot } from "@/components/UploadQueue";
+import { MergedResults } from "@/components/MergedResults";
 import { RunwayForecast } from "@/components/RunwayForecast";
 
 /* ---------------------------------------------------------------- helpers */
@@ -413,52 +415,136 @@ function DownloadCalendarButton({ result }: { result: IngestResult }) {
 
 type Phase = "idle" | "working" | "done" | "error";
 
+/** A full course load is five courses in a term. Ten would need syllabi that
+ *  do not exist yet in September, since they are published per term. */
+const MAX_FILES = 5;
+
 export default function Home() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [result, setResult] = useState<IngestResult | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [slots, setSlots] = useState<UploadSlot[]>([]);
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const upload = useCallback(async (file: File) => {
-    setFileName(file.name);
-    setPhase("working");
-    setMessage(null);
-    setResult(null);
+  /** Send one file. Returns the outcome rather than setting state, so the
+   *  caller can run several at once and reconcile them together. */
+  const sendOne = useCallback(
+    async (file: File): Promise<{ ok: true; result: IngestResult } | { ok: false; error: string }> => {
+      const body = new FormData();
+      body.append("syllabus", file);
+      try {
+        const response = await fetch("/api/ingest", { method: "POST", body });
+        const data: IngestResponse = await response.json();
+        if (!response.ok || !data.ok) {
+          return { ok: false, error: "error" in data ? data.error : "That import did not go through." };
+        }
+        return { ok: true, result: data };
+      } catch {
+        return { ok: false, error: "Could not reach the server." };
+      }
+    },
+    [],
+  );
 
-    const body = new FormData();
-    body.append("syllabus", file);
+  const runAll = useCallback(
+    async (toRun: UploadSlot[]) => {
+      setPhase("working");
+      setMessage(null);
+      setResult(null);
 
-    try {
-      const response = await fetch("/api/ingest", { method: "POST", body });
-      const data: IngestResponse = await response.json();
+      setSlots((prev) =>
+        prev.map((s) => (toRun.some((t) => t.id === s.id) ? { ...s, status: "parsing" } : s)),
+      );
 
-      if (!response.ok || !data.ok) {
-        setMessage("error" in data ? data.error : "That import did not go through.");
-        setPhase("error");
+      /*
+       * All at once, not one after another. Each file is a ~90 second model
+       * call; five in sequence is seven and a half minutes of staring at a
+       * spinner, which is a terrible demo and a worse product. Run in
+       * parallel and settle independently so one bad PDF cannot take the
+       * others down with it.
+       */
+      await Promise.all(
+        toRun.map(async (slot) => {
+          const outcome = await sendOne(slot.file);
+          setSlots((prev) =>
+            prev.map((s) =>
+              s.id === slot.id
+                ? outcome.ok
+                  ? { ...s, status: "done", result: outcome.result, error: undefined }
+                  : { ...s, status: "failed", error: outcome.error, result: undefined }
+                : s,
+            ),
+          );
+        }),
+      );
+
+      setPhase("done");
+    },
+    [sendOne],
+  );
+
+  const addFiles = useCallback(
+    (incoming: FileList | File[]) => {
+      const picked = Array.from(incoming);
+      if (picked.length === 0) return;
+
+      setMessage(null);
+      const existing = slots.length;
+      const room = MAX_FILES - existing;
+      if (room <= 0) {
+        setMessage(`That's the limit of ${MAX_FILES}. Remove one first.`);
         return;
       }
+      if (picked.length > room) {
+        setMessage(
+          `Only the first ${room} were added — ${MAX_FILES} syllabi is the limit, which is a full course load.`,
+        );
+      }
 
-      setResult(data);
-      setPhase("done");
-    } catch {
-      setMessage("Could not reach the server. Check that the app is still running.");
-      setPhase("error");
-    }
+      const next: UploadSlot[] = picked.slice(0, room).map((file, i) => ({
+        id: `${Date.now()}-${i}-${file.name}`,
+        file,
+        status: "queued",
+      }));
+
+      setSlots((prev) => [...prev, ...next]);
+      void runAll(next);
+    },
+    [slots.length, runAll],
+  );
+
+  const retryOne = useCallback(
+    (id: string) => {
+      const slot = slots.find((s) => s.id === id);
+      if (slot) void runAll([slot]);
+    },
+    [slots, runAll],
+  );
+
+  const removeOne = useCallback((id: string) => {
+    setSlots((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
       setDragging(false);
-      const file = event.dataTransfer.files?.[0];
-      if (file) void upload(file);
+      if (event.dataTransfer.files?.length) addFiles(event.dataTransfer.files);
     },
-    [upload],
+    [addFiles],
   );
 
   const busy = phase === "working";
+  const succeeded = slots.filter((s) => s.status === "done" && s.result).map((s) => s.result!);
+
+  const reset = useCallback(() => {
+    setPhase("idle");
+    setResult(null);
+    setSlots([]);
+    setMessage(null);
+    if (inputRef.current) inputRef.current.value = "";
+  }, []);
 
   const primaryCurrency = useMemo(() => {
     if (!result) return null;
@@ -504,26 +590,37 @@ export default function Home() {
               ref={inputRef}
               type="file"
               accept="application/pdf,.pdf"
-              disabled={busy}
+              multiple
+              disabled={busy || slots.length >= MAX_FILES}
               onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void upload(file);
+                if (e.target.files?.length) addFiles(e.target.files);
+                // Clear it, or picking the same file twice does nothing.
+                e.target.value = "";
               }}
             />
             {busy ? (
               <>
-                <p className="dropzone__headline">Reading it now</p>
+                <p className="dropzone__headline">
+                  {slots.length > 1 ? `Reading all ${slots.length} at once` : "Reading it now"}
+                </p>
                 <p className="dropzone__hint">
                   Resolving dates · pricing the term
                 </p>
               </>
             ) : (
               <>
-                <p className="dropzone__headline">Drop your syllabus here</p>
-                <p className="dropzone__hint">PDF · or click to choose a file</p>
+                <p className="dropzone__headline">
+                  {slots.length === 0
+                    ? "Drop your syllabi here"
+                    : slots.length >= MAX_FILES
+                      ? "That's a full course load"
+                      : `Add another (${MAX_FILES - slots.length} more)`}
+                </p>
+                <p className="dropzone__hint">
+                  PDF · up to {MAX_FILES}, one per course
+                </p>
               </>
             )}
-            {fileName && !busy && <p className="dropzone__file">{fileName}</p>}
           </label>
 
           <aside className="aside-card">
@@ -538,22 +635,53 @@ export default function Home() {
               <li>Set the watched folder on the Drive trigger.</li>
               <li>Activate the workflow. Drop syllabi in the folder.</li>
             </ol>
-            <button
-              className="btn"
-              style={{ alignSelf: "flex-start", marginTop: 4 }}
-              onClick={() => {
-                setResult(DEMO_RESULT);
-                setFileName(DEMO_RESULT.sourceName);
-                setMessage(null);
-                setPhase("done");
-              }}
-            >
-              See a worked example
-            </button>
+            <div className="aside-card__demos">
+              <button
+                className="btn"
+                onClick={() => {
+                  setSlots([]);
+                  setResult(DEMO_RESULT);
+                  setMessage(null);
+                  setPhase("done");
+                }}
+              >
+                One course
+              </button>
+              <button
+                className="btn"
+                onClick={() => {
+                  // Fake completed slots so the merged view renders from the
+                  // same code path a real multi-upload takes.
+                  setResult(null);
+                  setSlots(
+                    DEMO_MULTI.map((r, i) => ({
+                      id: `demo-${i}`,
+                      file: new File([], r.sourceName),
+                      status: "done" as const,
+                      result: r,
+                    })),
+                  );
+                  setMessage(null);
+                  setPhase("done");
+                }}
+              >
+                A full course load
+              </button>
+            </div>
+            <p className="aside-card__demohint">
+              Worked examples — no upload, no account, no cost.
+            </p>
           </aside>
         </section>
 
         {/* -------------------------------------------------------- status */}
+        <UploadQueue
+          slots={slots}
+          onRetry={retryOne}
+          onRemove={removeOne}
+          busy={busy}
+        />
+
         {busy && (
           <div className="progress" style={{ marginBottom: 40 }}>
             <span>Working</span>
@@ -563,21 +691,36 @@ export default function Home() {
           </div>
         )}
 
-        {phase === "error" && message && (
+        {message && (
           <div className="notice reveal">
-            <span className="notice__label">Import stopped</span>
+            <span className="notice__label">
+              {phase === "error" ? "Import stopped" : "Heads up"}
+            </span>
             {message}
           </div>
         )}
 
         {/* ------------------------------------------------------- results */}
-        {phase === "done" && result && (
-          <Results result={result} primaryCurrency={primaryCurrency} onReset={() => {
-            setPhase("idle");
-            setResult(null);
-            setFileName(null);
-            if (inputRef.current) inputRef.current.value = "";
-          }} />
+        {phase === "done" && (
+          <>
+            {/*
+              Two views, one pipeline. A single syllabus keeps the detailed
+              per-course layout; two or more get the merged one, because the
+              interesting facts — crunch weeks, shared textbooks, which course
+              is expensive — only exist across files.
+            */}
+            {succeeded.length > 1 ? (
+              <MergedResults results={succeeded} onReset={reset} />
+            ) : (
+              (result ?? succeeded[0]) && (
+                <Results
+                  result={(result ?? succeeded[0])!}
+                  primaryCurrency={primaryCurrency}
+                  onReset={reset}
+                />
+              )
+            )}
+          </>
         )}
 
         <footer className="footer">

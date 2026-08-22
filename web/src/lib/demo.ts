@@ -1,4 +1,94 @@
-import type { IngestResult } from "./types";
+import type { IngestResult, PlannedCost, PlannedEvent } from "./types";
+
+/* --------------------------------------------------------------- builders */
+
+const TZ = "America/Toronto";
+
+function ev(
+  code: string,
+  date: string,
+  title: string,
+  kind: PlannedEvent["kind"],
+  weight: number | null,
+  time = "23:59",
+): PlannedEvent {
+  const [h, m] = time.split(":").map(Number);
+  const end = new Date(`${date}T${time}:00`);
+  end.setHours(h + 1, m);
+  return {
+    summary: `${code}: ${title}`,
+    start: `${date}T${time}:00`,
+    end: `${date}T${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}:00`,
+    timezone: TZ,
+    description: "",
+    kind,
+    date,
+    weightPercent: weight,
+    confidence: 0.92,
+  };
+}
+
+function cost(
+  label: string,
+  amount: number | null,
+  neededBy: string | null,
+  mandatory = true,
+  category: PlannedCost["category"] = "textbook",
+): PlannedCost {
+  return {
+    label,
+    category,
+    amount,
+    currency: "CAD",
+    isMandatory: mandatory,
+    neededBy,
+    month: neededBy ? neededBy.slice(0, 7) : null,
+    notes: "",
+    sourceQuote: "",
+    confidence: 0.9,
+  };
+}
+
+function course(
+  code: string,
+  title: string,
+  events: PlannedEvent[],
+  costs: PlannedCost[],
+): IngestResult {
+  const priced = costs.filter((c) => c.amount !== null);
+  const all = priced.reduce((s, c) => s + (c.amount ?? 0), 0);
+  const mandatory = priced
+    .filter((c) => c.isMandatory)
+    .reduce((s, c) => s + (c.amount ?? 0), 0);
+  return {
+    ok: true,
+    sourceName: `${code.replace(/\s+/g, "")}-fall-syllabus.pdf`,
+    timezone: TZ,
+    course: { code, title, term: "Fall 2026", institution: "Queen's University" },
+    calendar: { created: 0, attempted: events.length, failed: [] },
+    events,
+    costs,
+    timeline: [],
+    totals: {
+      CAD: {
+        mandatory: Math.round(mandatory * 100) / 100,
+        optional: Math.round((all - mandatory) * 100) / 100,
+        all: Math.round(all * 100) / 100,
+      },
+    },
+    stats: {
+      eventCount: events.length,
+      costCount: costs.length,
+      pricedCount: priced.length,
+      unpricedCount: costs.length - priced.length,
+      mixedCurrency: false,
+      model: "claude-sonnet-5",
+      inputTokens: 0,
+      outputTokens: 0,
+    },
+    warnings: [],
+  };
+}
 
 /**
  * A worked example, shaped like a real second-year course at Queen's.
@@ -57,3 +147,60 @@ export const DEMO_RESULT: IngestResult = {
     "The group presentation date was inferred from “week 12” rather than stated outright — confirm it with your instructor.",
   ],
 };
+
+/* ------------------------------------------------------ multi-course demo */
+
+/**
+ * Three courses from one term, so the merged view can be shown without
+ * spending three model calls.
+ *
+ * Built to exercise the things that only exist across files:
+ *   - a crunch week (Oct 20-23) where three courses all want something,
+ *     mirroring the engineered cluster in the test corpus
+ *   - the same iClicker subscription required by two courses, which must be
+ *     counted once and not twice
+ *   - a clearly expensive course versus a nearly free one
+ */
+export const DEMO_MULTI: IngestResult[] = [
+  course(
+    "CHEM 201",
+    "Organic Chemistry I",
+    [
+      ev("CHEM 201", "2026-09-25", "Lab report 1", "lab", 5),
+      ev("CHEM 201", "2026-10-21", "Midterm 1", "exam", 20, "19:00"),
+      ev("CHEM 201", "2026-11-18", "Midterm 2", "exam", 20, "19:00"),
+      ev("CHEM 201", "2026-12-04", "Lab practical", "lab", 15),
+    ],
+    [
+      cost("Organic Chemistry, 9th ed. (used)", 315.5, "2026-09-14"),
+      cost("iClicker Cloud subscription", 35, "2026-09-14", true, "courseware"),
+      cost("Lab goggles and coat", 48, "2026-09-18", true, "lab_materials"),
+      cost("Refundable locker deposit", 25, "2026-09-18", true, "other"),
+    ],
+  ),
+  course(
+    "PSYC 202",
+    "Research Methods",
+    [
+      ev("PSYC 202", "2026-10-02", "Method critique", "assignment", 10),
+      ev("PSYC 202", "2026-10-22", "Midterm", "exam", 25, "10:00"),
+      ev("PSYC 202", "2026-11-20", "Final paper", "project", 30),
+    ],
+    [
+      cost("Research Methods in Psychology (used)", 167, "2026-09-14"),
+      // Same subscription as CHEM 201. One covers both courses.
+      cost("iClicker Cloud subscription", 35, "2026-09-14", true, "courseware"),
+    ],
+  ),
+  course(
+    "MATH 240",
+    "Linear Algebra",
+    [
+      ev("MATH 240", "2026-10-09", "Problem set 3", "assignment", 5),
+      ev("MATH 240", "2026-10-23", "Midterm", "exam", 30, "18:30"),
+      ev("MATH 240", "2026-11-27", "Problem set 6", "assignment", 5),
+    ],
+    // Deliberately free: open textbook, free software, no clicker.
+    [],
+  ),
+];

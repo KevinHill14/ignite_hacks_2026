@@ -17,7 +17,8 @@
     "check:sim": "node --experimental-strip-types scripts/check-runway-sim.mjs",
     "check:income": "node --experimental-strip-types scripts/check-income.mjs",
     "check:merge": "node --experimental-strip-types scripts/check-merge.mjs",
-    "check:auth": "node --experimental-strip-types scripts/check-auth.mjs"
+    "check:auth": "node --experimental-strip-types scripts/check-auth.mjs",
+    "check:demo": "node --experimental-strip-types scripts/verify-demo.mjs"
   },
   "engines": {
     "node": ">=20"

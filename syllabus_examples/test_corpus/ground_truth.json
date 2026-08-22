@@ -1,0 +1,317 @@
+{
+  "corpus": "Fall 2026 syllabus test corpus",
+  "note": "Hand-authored answer key. All 12 syllabi share one term calendar so they can be imported together. Use this to score parser precision/recall. Amounts are CAD unless noted.",
+  "term_calendar": {
+    "term": "Fall 2026",
+    "classes_begin": "2026-09-08",
+    "reading_week": ["2026-10-12", "2026-10-16"],
+    "last_day_of_classes": "2026-12-07",
+    "exam_period": ["2026-12-09", "2026-12-18"],
+    "drop_100_percent_refund": "2026-09-21",
+    "drop_50_percent_refund": "2026-10-02",
+    "drop_no_refund_after": "2026-10-16",
+    "drop_no_academic_penalty": "2026-11-10"
+  },
+
+  "expected_cluster_weeks": [
+    {
+      "week_of": "2026-10-19",
+      "why": "Four assessments across the five Set-A courses in one week. Your cluster-week detector should fire here.",
+      "events": [
+        {"file": "ENG150_intro_literature_F2026.docx", "event": "Essay 1", "date": "2026-10-20"},
+        {"file": "CHEM201_organic_chemistry_F2026.pdf", "event": "Midterm 1", "date": "2026-10-21"},
+        {"file": "BUS301_corporate_finance_F2026.pdf", "event": "Midterm", "date": "2026-10-22"},
+        {"file": "CPS209_computer_science_F2026.txt", "event": "Midterm", "date": "2026-10-23"}
+      ]
+    },
+    {
+      "week_of": "2026-11-16",
+      "why": "Second cluster; also the week PSYC202's research-participation deadline lands.",
+      "events": [
+        {"file": "ENG150_intro_literature_F2026.docx", "event": "Essay 2", "date": "2026-11-17"},
+        {"file": "CHEM201_organic_chemistry_F2026.pdf", "event": "Midterm 2", "date": "2026-11-18"},
+        {"file": "CPS209_computer_science_F2026.txt", "event": "Assignment 3 due", "date": "2026-11-20"}
+      ]
+    }
+  ],
+
+  "expected_duplicate_costs": [
+    {
+      "item": "iClicker Cloud subscription",
+      "amount": 35.00,
+      "appears_in": ["CHEM201_organic_chemistry_F2026.pdf", "PSYC202_table_heavy_F2026.pdf"],
+      "correct_behaviour": "Charge ONCE. PSYC202 states explicitly that one subscription covers all courses. A parser that double-counts produces $70.00 and is wrong."
+    }
+  ],
+
+  "files": [
+    {
+      "file": "CHEM201_organic_chemistry_F2026.pdf",
+      "set": "A",
+      "format": "pdf",
+      "tests": ["clean structured tables", "cost with multiple purchase options", "refundable deposit", "recurring weekly labs", "student-account vs out-of-pocket billing"],
+      "course": {"code": "CHM 201", "name": "Organic Chemistry I", "term": "Fall 2026"},
+      "costs": [
+        {"name": "Laboratory manual", "amount": 42.00, "due": "2026-09-14", "required": true},
+        {"name": "Safety goggles", "amount": 18.50, "due": "2026-09-14", "required": true},
+        {"name": "iClicker Cloud subscription", "amount": 35.00, "due": "2026-09-15", "required": true, "duplicate_of": "PSYC202"},
+        {"name": "Textbook (Organic Chemistry 10th ed.)", "amount_options": {"new": 214.00, "used": 145.00, "rental": 68.00}, "due": "2026-09-08", "required": true, "note": "Three mutually exclusive prices. Pick one; do not sum."},
+        {"name": "Laboratory breakage deposit", "amount": 75.00, "due": "2026-09-25", "required": true, "refundable": true, "billed_to_student_account": true},
+        {"name": "Molecular model kit", "amount": 29.95, "due": "2026-10-05", "required": false, "note": "'Strongly recommended' — not required"},
+        {"name": "Scientific calculator", "amount_range": [0.00, 25.00], "due": "2026-10-21", "required": true, "note": "May already own one"}
+      ],
+      "expected_required_total_used_textbook": 315.50,
+      "key_dates": [
+        {"title": "Weekly laboratory", "type": "lab", "recurrence": "every Monday", "start": "2026-09-14", "end": "2026-11-30", "excludes": ["2026-10-12"], "expected_occurrences": 11},
+        {"title": "Midterm Examination 1", "type": "exam", "date": "2026-10-21", "weight": 0.20},
+        {"title": "Midterm Examination 2", "type": "exam", "date": "2026-11-18", "weight": 0.20},
+        {"title": "Final Examination", "type": "exam", "date": "2026-12-12", "weight": 0.40}
+      ]
+    },
+    {
+      "file": "BUS301_corporate_finance_F2026.pdf",
+      "set": "A",
+      "format": "pdf",
+      "tests": ["costs buried in prose, no cost table", "foreign currency", "price range", "explicitly optional item", "used-market alternative pricing"],
+      "course": {"code": "BUS 301", "name": "Corporate Finance", "term": "Fall 2026"},
+      "costs": [
+        {"name": "Textbook (Corporate Finance)", "amount_options": {"new": 210.00, "used": 145.00}, "due": "2026-09-08", "required": true},
+        {"name": "Case pack (11 cases)", "amount": 89.00, "due": "2026-09-18", "required": true, "note": "Hard licensing deadline — cannot be purchased late"},
+        {"name": "Capsim simulation licence", "amount": 45.00, "currency": "USD", "amount_cad_estimate": 62.00, "due": "2026-10-05", "required": true, "note": "FX edge case. Stated in USD with an approximate CAD figure."},
+        {"name": "CFA Level I prep guide", "amount": 55.00, "required": false, "note": "Explicitly optional and non-examinable — must NOT be counted as required"},
+        {"name": "Financial calculator (BA II Plus)", "amount_options": {"new": 40.00, "used_low": 15.00, "used_high": 20.00}, "due": "2026-10-22", "required": true}
+      ],
+      "key_dates": [
+        {"title": "Midterm Examination", "type": "exam", "date": "2026-10-22", "weight": 0.25},
+        {"title": "Group valuation project", "type": "project", "date": "2026-11-27", "weight": 0.25},
+        {"title": "Final Examination", "type": "exam", "date": "2026-12-15", "weight": 0.30}
+      ]
+    },
+    {
+      "file": "ENG150_intro_literature_F2026.docx",
+      "set": "A",
+      "format": "docx",
+      "tests": ["DOCX parsing", "many small itemized book costs", "ambiguous 'any edition' free alternative", "course with no exams at all"],
+      "course": {"code": "ENG 150", "name": "Introduction to Literary Studies", "term": "Fall 2026"},
+      "costs": [
+        {"name": "Things Fall Apart", "amount": 12.95, "required": true, "avoidable": true},
+        {"name": "Mrs Dalloway", "amount": 14.50, "required": true, "avoidable": true},
+        {"name": "Beloved", "amount": 16.00, "required": true, "avoidable": false},
+        {"name": "The Remains of the Day", "amount": 13.25, "required": true, "avoidable": false},
+        {"name": "Frankenstein (Broadview 1818 text)", "amount": 18.99, "required": true, "avoidable": false, "note": "Specific edition required — cannot substitute a free copy"},
+        {"name": "Their Eyes Were Watching God", "amount": 11.99, "required": true, "avoidable": true},
+        {"name": "Disgrace", "amount": 10.50, "required": true, "avoidable": true},
+        {"name": "Course reader (copy centre)", "amount": 24.00, "due": "2026-09-25", "required": true}
+      ],
+      "expected_book_total": 98.18,
+      "expected_total_all": 122.18,
+      "note": "Five of seven novels say 'any edition', so a library copy costs $0. A good parser flags these as avoidable rather than assuming full price.",
+      "key_dates": [
+        {"title": "Close reading exercise", "type": "assignment", "date": "2026-09-29", "weight": 0.15},
+        {"title": "Essay 1", "type": "assignment", "date": "2026-10-20", "weight": 0.25},
+        {"title": "Essay 2", "type": "assignment", "date": "2026-11-17", "weight": 0.30},
+        {"title": "Final portfolio", "type": "assignment", "date": "2026-12-08", "weight": 0.20}
+      ],
+      "expected_exam_count": 0
+    },
+    {
+      "file": "CPS209_computer_science_F2026.txt",
+      "set": "A",
+      "format": "txt",
+      "tests": ["ugly LMS plain-text export", "recurring weekly quizzes needing expansion", "explicit zero-cost textbook (false-positive trap)"],
+      "course": {"code": "CPS 209", "name": "Computer Science II", "term": "Fall 2026"},
+      "costs": [
+        {"name": "AWS Educate credit bundle", "amount": 25.00, "due": "2026-10-01", "required": true},
+        {"name": "Textbook (Shaffer, open licence)", "amount": 0.00, "required": true, "note": "FALSE-POSITIVE TRAP: text says free, do not purchase. Must not be assigned a price."},
+        {"name": "Laptop", "amount": 0.00, "required": true, "note": "Loaners free from helpdesk"}
+      ],
+      "expected_total": 25.00,
+      "key_dates": [
+        {"title": "Weekly quiz", "type": "quiz", "recurrence": "every Friday", "start": "2026-09-25", "end": "2026-12-04", "excludes": ["2026-10-16"], "expected_occurrences": 10},
+        {"title": "Assignment 1 due", "type": "assignment", "date": "2026-10-02"},
+        {"title": "Assignment 2 due", "type": "assignment", "date": "2026-10-30"},
+        {"title": "Assignment 3 due", "type": "assignment", "date": "2026-11-20"},
+        {"title": "Assignment 4 due", "type": "assignment", "date": "2026-12-04"},
+        {"title": "Midterm exam", "type": "exam", "date": "2026-10-23", "weight": 0.20},
+        {"title": "Final exam", "type": "exam", "date": "2026-12-10", "weight": 0.35}
+      ]
+    },
+    {
+      "file": "ARTH110_art_history_F2026.pdf",
+      "set": "A",
+      "format": "pdf",
+      "tests": ["very sparse one-page document", "unresolvable TBD exam date", "minimal structure"],
+      "course": {"code": "ARTH 110", "name": "Introduction to Art History", "term": "Fall 2026"},
+      "costs": [
+        {"name": "Course reader", "amount": 28.00, "due": "2026-09-11", "required": true},
+        {"name": "Gallery visit (admission + transit)", "amount": 35.00, "due": "2026-10-29", "required": true}
+      ],
+      "expected_total": 63.00,
+      "key_dates": [
+        {"title": "Midterm test", "type": "exam", "date": "2026-11-04", "weight": 0.30},
+        {"title": "Gallery report", "type": "assignment", "date": "2026-11-12", "weight": 0.15},
+        {"title": "Final examination", "type": "exam", "date": null, "date_range": ["2026-12-09", "2026-12-18"], "weight": 0.35, "note": "TBD. Must be surfaced as an unscheduled event with a known window, NOT silently dropped and NOT guessed at a specific day."}
+      ]
+    },
+    {
+      "file": "NURS240_scanned_ocr.txt",
+      "set": "B",
+      "format": "txt (OCR-garbled)",
+      "tests": ["OCR noise: 5/S, 1/l, 0/O substitutions, split words, stray spaces in amounts like '$120 .00'", "vague aggregate estimate", "wide price range"],
+      "course": {"code": "NURS 240", "name": "Clinical Foundations II", "term": "Fall 2026"},
+      "costs": [
+        {"name": "Clinical uniform (2 sets of scrubs)", "amount": 120.00, "due": "2026-09-18", "required": true},
+        {"name": "Stethoscope", "amount_range": [85.00, 140.00], "required": true},
+        {"name": "Immunization record processing fee", "amount": 60.00, "due": "2026-09-25", "required": true, "billed_to_student_account": true},
+        {"name": "CPR-HCP certification", "amount": 95.00, "due": "2026-10-17", "required": true, "note": "Sessions Oct 3 and Oct 17"},
+        {"name": "Placement travel", "amount_estimate": 200.00, "required": true, "spread_over_term": true, "note": "Vague aggregate: 'approximately $200 over the term'. Should be spread, not booked as one spike."},
+        {"name": "Skills kit (BP cuff, penlight, shears)", "amount": 47.50, "due": "2026-09-08", "required": true}
+      ],
+      "expected_total_midpoint": 635.00,
+      "key_dates": [
+        {"title": "Lab skills check", "type": "assessment", "date": "2026-10-26", "weight": 0.20},
+        {"title": "Clinical placement begins", "type": "milestone", "date": "2026-11-02"},
+        {"title": "Midterm theory exam", "type": "exam", "date": "2026-11-09", "weight": 0.25},
+        {"title": "Final OSCE", "type": "exam", "date": "2026-12-14", "weight": 0.40}
+      ]
+    },
+    {
+      "file": "ENGR305_thermofluids_long_F2026.pdf",
+      "set": "B",
+      "format": "pdf (8 pages, dense)",
+      "tests": ["long document — costs are in section 7 on page 5, not near the top", "same cost stated twice (schedule table and section 8) — must not double-count", "instalment payments", "refundable deposit", "barrier requirement"],
+      "course": {"code": "MEC 305", "name": "Thermofluids Engineering", "term": "Fall 2026"},
+      "costs": [
+        {"name": "Laboratory kit", "amount": 88.00, "due": "2026-09-14", "required": true},
+        {"name": "Textbook (Thermal-Fluid Sciences 6th ed.)", "amount_options": {"new": 232.00, "used": 168.00}, "due": "2026-09-08", "required": true},
+        {"name": "Solutions supplement", "amount": 41.00, "required": false},
+        {"name": "MATLAB/Simulink licence", "amount": 0.00, "required": true, "note": "Free — false-positive trap"},
+        {"name": "Field study deposit", "amount": 150.00, "due": "2026-09-30", "required": true, "refundable": false, "instalment": "1 of 2"},
+        {"name": "Field study balance", "amount": 175.00, "due": "2026-10-24", "required": true, "instalment": "2 of 2"},
+        {"name": "Departmental locker deposit", "amount": 20.00, "due": "2026-09-14", "required": true, "refundable": true},
+        {"name": "Field study meals", "amount_range": [60.00, 90.00], "due": "2026-11-05", "required": true, "note": "Vague, stated in section 8 only"}
+      ],
+      "expected_required_total_used_textbook": 601.00,
+      "note": "The $150 and $175 field study instalments appear BOTH in the section 7 table and again in section 8 prose, and the deposit also appears in the week-4 schedule row. Total field study cost is $325, not $650 or $975.",
+      "key_dates": [
+        {"title": "Midterm examination", "type": "exam", "date": "2026-10-28", "weight": 0.22},
+        {"title": "Mandatory field study", "type": "trip", "date_range": ["2026-11-05", "2026-11-06"], "note": "Barrier requirement"},
+        {"title": "Design study report", "type": "project", "date": "2026-11-30", "weight": 0.15},
+        {"title": "Reflective memorandum", "type": "assignment", "date": "2026-12-04", "weight": 0.02},
+        {"title": "Final examination", "type": "exam", "date": "2026-12-16", "weight": 0.33}
+      ]
+    },
+    {
+      "file": "PHIL101_minimal.txt",
+      "set": "B",
+      "format": "txt",
+      "tests": ["graceful degradation — almost no extractable data", "no costs at all", "deliberately vague dates that must NOT be invented"],
+      "course": {"code": "PHIL 101", "name": "Introduction to Philosophy", "term": "Fall 2026"},
+      "costs": [],
+      "expected_total": 0.00,
+      "key_dates": [
+        {"title": "Midterm", "type": "exam", "date": null, "note": "Stated only as 'held in October'. Correct behaviour is to surface it as undated, not to guess a date."},
+        {"title": "Final examination", "type": "exam", "date": null, "date_range": ["2026-12-09", "2026-12-18"]},
+        {"title": "Short papers (2)", "type": "assignment", "date": null}
+      ],
+      "failure_mode_to_watch": "Hallucinating dates or costs that are not in the document. This file should produce an almost-empty result with a clear 'insufficient detail' signal to the user."
+    },
+    {
+      "file": "MATH240_linear_algebra_F2026.pdf",
+      "set": "B",
+      "format": "pdf",
+      "tests": ["complete, well-formed syllabus with GENUINELY ZERO costs", "false-positive detection"],
+      "course": {"code": "MTH 240", "name": "Linear Algebra", "term": "Fall 2026"},
+      "costs": [],
+      "expected_total": 0.00,
+      "note": "The document mentions an open textbook, an optional at-cost print copy, free software and 'no clicker subscription'. A parser that invents a textbook price here is producing a false positive. This is the single most important precision test in the corpus.",
+      "key_dates": [
+        {"title": "Term Test 1", "type": "exam", "date": "2026-10-08", "weight": 0.20},
+        {"title": "Term Test 2", "type": "exam", "date": "2026-11-12", "weight": 0.20},
+        {"title": "Final Examination", "type": "exam", "date": "2026-12-11", "weight": 0.50},
+        {"title": "Online homework", "type": "assignment", "recurrence": "weekly Sundays", "expected_occurrences": 11}
+      ]
+    },
+    {
+      "file": "FASH220_studio_supplies_F2026.pdf",
+      "set": "B",
+      "format": "pdf",
+      "tests": ["17 small itemized costs in one table", "vague aggregate range spread over the term", "two separate fees billed to student account", "refundable deposit inside an itemized list"],
+      "course": {"code": "FSN 220", "name": "Garment Construction Studio I", "term": "Fall 2026"},
+      "costs_kit_total": 271.54,
+      "costs_kit_item_count": 17,
+      "costs": [
+        {"name": "Studio kit (17 items, itemized)", "amount": 271.54, "due": "2026-09-15", "required": true, "includes_refundable": 20.00},
+        {"name": "Fabric and notions", "amount_range": [250.00, 400.00], "required": true, "spread_over_term": true, "note": "Explicitly variable. Should be spread across the four project cycles, not booked as one spike."},
+        {"name": "Studio materials fee", "amount": 65.00, "due": "2026-09-25", "required": true, "billed_to_student_account": true},
+        {"name": "Showcase participation fee", "amount": 25.00, "due": "2026-11-20", "required": true}
+      ],
+      "expected_total_midpoint": 686.54,
+      "key_dates": [
+        {"title": "Fabric review 1", "type": "milestone", "date": "2026-09-24"},
+        {"title": "Project 1 — A-line skirt", "type": "project", "date": "2026-10-05", "weight": 0.15},
+        {"title": "Fabric review 2", "type": "milestone", "date": "2026-10-22"},
+        {"title": "Fabric review 3", "type": "milestone", "date": "2026-11-05"},
+        {"title": "Project 2 — Fitted bodice", "type": "project", "date": "2026-11-09", "weight": 0.20},
+        {"title": "Fabric review 4", "type": "milestone", "date": "2026-11-19"},
+        {"title": "Project 3 — Tailored trouser", "type": "project", "date": "2026-11-26", "weight": 0.25},
+        {"title": "Final showcase garment", "type": "project", "date": "2026-12-03", "weight": 0.30}
+      ],
+      "expected_exam_count": 0
+    },
+    {
+      "file": "HIST280_relative_dates.txt",
+      "set": "B",
+      "format": "txt",
+      "tests": ["NO absolute assessment dates — every date is relative ('Week 4', 'the class immediately following reading week')", "requires resolving week numbers against the term start and skipping reading week", "optional per-unit cost that multiplies"],
+      "course": {"code": "HIST 280", "name": "Modern Europe 1789–1945", "term": "Fall 2026"},
+      "lecture_day": "Wednesday",
+      "week_resolution": {
+        "1": "2026-09-09", "2": "2026-09-16", "3": "2026-09-23", "4": "2026-09-30",
+        "5": "2026-10-07", "6": "2026-10-14 (reading week — no lecture)", "7": "2026-10-21",
+        "8": "2026-10-28", "9": "2026-11-04", "10": "2026-11-11", "11": "2026-11-18",
+        "12": "2026-11-25", "13": "2026-12-02"
+      },
+      "costs": [
+        {"name": "Printed course pack", "amount": 32.00, "due": "2026-09-11", "required": true, "note": "'First week of classes'; copy centre stops reprinting after week three"},
+        {"name": "Documentary streaming rentals", "amount": 4.99, "quantity": 5, "total": 24.95, "required": false, "note": "Explicitly optional — free at the library reserve desk"}
+      ],
+      "expected_required_total": 32.00,
+      "key_dates": [
+        {"title": "Response paper 1", "type": "assignment", "stated_as": "Week 3", "date": "2026-09-23"},
+        {"title": "Midterm examination", "type": "exam", "stated_as": "Week 5, second hour of lecture", "date": "2026-10-07", "weight": 0.25},
+        {"title": "Response paper 2", "type": "assignment", "stated_as": "the class immediately following reading week (Week 7)", "date": "2026-10-21"},
+        {"title": "Research essay", "type": "assignment", "stated_as": "Week 10", "date": "2026-11-11", "weight": 0.25},
+        {"title": "Final examination", "type": "exam", "date": null, "date_range": ["2026-12-09", "2026-12-18"], "weight": 0.30}
+      ]
+    },
+    {
+      "file": "PSYC202_table_heavy_F2026.pdf",
+      "set": "B",
+      "format": "pdf",
+      "tests": ["dense 14-row schedule grid — main extraction target is a table, not prose", "duplicate iClicker cost shared with CHEM201", "explicit $0.00 research-participation requirement (trap)", "assessment listed in a grid cell mid-row"],
+      "course": {"code": "PSY 202", "name": "Research Methods and Statistics I", "term": "Fall 2026"},
+      "costs": [
+        {"name": "Lab manual", "amount": 38.00, "due": "2026-09-11", "required": true},
+        {"name": "iClicker Cloud subscription", "amount": 35.00, "due": "2026-09-15", "required": true, "duplicate_of": "CHEM201", "note": "Document states one subscription covers all courses"},
+        {"name": "Textbook (Research Methods in Psychology 6th ed.)", "amount_options": {"new": 156.00, "used": 94.00}, "due": "2026-09-09", "required": true},
+        {"name": "SPSS student licence", "amount": 0.00, "required": true, "note": "Free — false-positive trap"},
+        {"name": "Research participation requirement", "amount": 0.00, "required": true, "note": "TRAP: 3 hours of participation OR a written alternative, both free. Must not be assigned a dollar cost."}
+      ],
+      "expected_total_used_textbook": 167.00,
+      "key_dates": [
+        {"title": "Quiz 1", "type": "quiz", "date": "2026-09-25", "note": "Grid shows week of Sep 23; quizzes are held in the Friday lab"},
+        {"title": "Lab report 1 due", "type": "assignment", "date": "2026-10-02"},
+        {"title": "Quiz 2", "type": "quiz", "date": "2026-10-23"},
+        {"title": "Midterm examination", "type": "exam", "date": "2026-10-27", "weight": 0.22, "note": "Stated inside a grid cell, not in the evaluation table"},
+        {"title": "Lab report 2 due", "type": "assignment", "date": "2026-11-06"},
+        {"title": "Quiz 3", "type": "quiz", "date": "2026-11-13"},
+        {"title": "Research participation deadline", "type": "milestone", "date": "2026-11-18"},
+        {"title": "Lab report 3 due", "type": "assignment", "date": "2026-11-27"},
+        {"title": "Quiz 4", "type": "quiz", "date": "2026-12-04"},
+        {"title": "Final paper due", "type": "assignment", "date": "2026-12-07"},
+        {"title": "Final examination", "type": "exam", "date": "2026-12-17", "weight": 0.30}
+      ]
+    }
+  ]
+}

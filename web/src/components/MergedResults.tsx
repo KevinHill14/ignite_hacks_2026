@@ -132,6 +132,16 @@ export function MergedResults({
       return next;
     });
 
+  /*
+   * Same reasoning as the single-course view: a worked example never
+   * touches a calendar, so it reports 0 created and 0 failed. Rendered as
+   * "0 of 10 on your calendar" that reads as a failed run, not a demo.
+   */
+  const nothingWritten =
+    merged.calendar.attempted > 0 &&
+    merged.calendar.created === 0 &&
+    merged.calendar.failed.length === 0;
+
   if (kept.length === 0) {
     return (
       <div className="reveal">
@@ -162,8 +172,10 @@ export function MergedResults({
             {merged.courses.map((c) => c.code || c.title).join("  ·  ")}
           </p>
         </div>
-        <span className="receipt__calendar">
-          {merged.calendar.created} of {merged.calendar.attempted} on your calendar
+        <span className={`receipt__calendar${nothingWritten ? " is-sample" : ""}`}>
+          {nothingWritten
+            ? "Worked example — nothing was written to a calendar"
+            : `${merged.calendar.created} of ${merged.calendar.attempted} on your calendar`}
         </span>
       </section>
 

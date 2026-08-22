@@ -583,109 +583,125 @@ export default function Home() {
             Your syllabus is <em>a bill</em> nobody itemized.
           </h1>
           <p className="masthead__lede">
-            Drop in your syllabi — up to five, a full course load. Every
-            deadline goes onto your calendar, and every textbook, lab kit and
-            fee lands on one timeline. So you find out what the term costs now,
-            not one surprise at a time.
+            Drop in up to 5 syllabi. Every deadline goes onto your calendar,
+            including fees you will have to pay. So you find out what the
+            term costs now, not one surprise at a time.
           </p>
         </header>
 
         {/* -------------------------------------------------------- intake */}
         <section className="intake">
-          <label
-            className={`dropzone${dragging ? " is-dragging" : ""}${busy ? " is-busy" : ""}`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              if (!busy) setDragging(true);
-            }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={busy ? (e) => e.preventDefault() : onDrop}
-          >
-            <input
-              ref={inputRef}
-              type="file"
-              accept="application/pdf,.pdf"
-              multiple
-              disabled={busy || slots.length >= MAX_FILES}
-              onChange={(e) => {
-                if (e.target.files?.length) addFiles(e.target.files);
-                // Clear it, or picking the same file twice does nothing.
-                e.target.value = "";
+          <div>
+            <label
+              className={`dropzone${dragging ? " is-dragging" : ""}${busy ? " is-busy" : ""}`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (!busy) setDragging(true);
               }}
-            />
-            {busy ? (
-              <>
-                <p className="dropzone__headline">
-                  {slots.length > 1 ? `Reading all ${slots.length} at once` : "Reading it now"}
-                </p>
-                <p className="dropzone__hint">
-                  Resolving dates · pricing the term
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="dropzone__headline">
-                  {slots.length === 0
-                    ? "Drop your syllabi here"
-                    : slots.length >= MAX_FILES
-                      ? "That's a full course load"
-                      : `Add another (${MAX_FILES - slots.length} more)`}
-                </p>
-                <p className="dropzone__hint">
-                  PDF · up to {MAX_FILES}, one per course
-                </p>
-              </>
+              onDragLeave={() => setDragging(false)}
+              onDrop={busy ? (e) => e.preventDefault() : onDrop}
+            >
+              <input
+                ref={inputRef}
+                type="file"
+                accept="application/pdf,.pdf"
+                multiple
+                disabled={busy || slots.length >= MAX_FILES}
+                onChange={(e) => {
+                  if (e.target.files?.length) addFiles(e.target.files);
+                  // Clear it, or picking the same file twice does nothing.
+                  e.target.value = "";
+                }}
+              />
+              {busy ? (
+                <>
+                  <p className="dropzone__headline">
+                    {slots.length > 1 ? `Reading all ${slots.length} at once` : "Reading it now"}
+                  </p>
+                  <p className="dropzone__hint">
+                    Resolving dates · pricing the term
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="dropzone__headline">
+                    {slots.length === 0
+                      ? "Drop your syllabi here"
+                      : slots.length >= MAX_FILES
+                        ? "That's a full course load"
+                        : `Add another (${MAX_FILES - slots.length} more)`}
+                  </p>
+                  <p className="dropzone__hint">
+                    PDF · up to {MAX_FILES}, one per course
+                  </p>
+                </>
+              )}
+            </label>
+
+            {/*
+              Small and out of the way on purpose — this is a shortcut for
+              the curious, not a second call to action competing with the
+              dropzone above it.
+            */}
+            {!busy && slots.length === 0 && (
+              <p className="example-links">
+                See an example first:{" "}
+                <button
+                  type="button"
+                  className="example-links__link"
+                  onClick={() => {
+                    setSlots([]);
+                    setResult(DEMO_RESULT);
+                    setMessage(null);
+                    setPhase("done");
+                  }}
+                >
+                  one course
+                </button>{" "}
+                ·{" "}
+                <button
+                  type="button"
+                  className="example-links__link"
+                  onClick={() => {
+                    // Fake completed slots so the merged view renders from
+                    // the same code path a real multi-upload takes.
+                    setResult(null);
+                    setSlots(
+                      DEMO_MULTI.map((r, i) => ({
+                        id: `demo-${i}`,
+                        file: new File([], r.sourceName),
+                        status: "done" as const,
+                        result: r,
+                      })),
+                    );
+                    setMessage(null);
+                    setPhase("done");
+                  }}
+                >
+                  a full course load
+                </button>
+              </p>
             )}
-          </label>
+          </div>
 
           <aside className="aside-card">
-            <h2 className="aside-card__title">Or never touch this page again</h2>
+            <h2 className="aside-card__title">How it works</h2>
             <p>
-              Connect Google Drive once in n8n and point the pipeline at a
-              folder. Anything you drop in it imports on its own — no upload, no
-              clicking.
+              Every syllabus goes to Claude, which reads it for deadlines and
+              costs the way you would — just faster, and across all five at
+              once.
             </p>
             <ol className="aside-card__steps">
-              <li>Open n8n and connect Google Drive and Google Calendar.</li>
-              <li>Set the watched folder on the Drive trigger.</li>
-              <li>Activate the workflow. Drop syllabi in the folder.</li>
+              <li>Drop in your syllabi — one PDF per course, up to five.</li>
+              <li>
+                Claude reads each one for due dates, weights, textbooks, and
+                fees.
+              </li>
+              <li>
+                Deadlines land on your calendar; every cost lands on one
+                timeline so you see the term's real total.
+              </li>
             </ol>
-            <div className="aside-card__demos">
-              <button
-                className="btn"
-                onClick={() => {
-                  setSlots([]);
-                  setResult(DEMO_RESULT);
-                  setMessage(null);
-                  setPhase("done");
-                }}
-              >
-                One course
-              </button>
-              <button
-                className="btn"
-                onClick={() => {
-                  // Fake completed slots so the merged view renders from the
-                  // same code path a real multi-upload takes.
-                  setResult(null);
-                  setSlots(
-                    DEMO_MULTI.map((r, i) => ({
-                      id: `demo-${i}`,
-                      file: new File([], r.sourceName),
-                      status: "done" as const,
-                      result: r,
-                    })),
-                  );
-                  setMessage(null);
-                  setPhase("done");
-                }}
-              >
-                A full course load
-              </button>
-            </div>
-            <p className="aside-card__demohint">
-              Worked examples — no upload, no account, no cost.
-            </p>
           </aside>
         </section>
 

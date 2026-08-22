@@ -4,6 +4,14 @@ Written to be followed literally. Every value you need to paste is given.
 
 Budget about 45 minutes. Most of it is waiting for builds.
 
+> **AFTER JUDGING: downgrade `syllabus-n8n` back to Starter.**
+> It was bumped to Standard (2 GB RAM, ~$25/mo) on 2026-08-22 because n8n
+> reliably OOM-crashed on Starter's 512 MB the moment it ran the real
+> pipeline (PDF extraction + a live Claude call + a Calendar write need
+> far more memory than sitting idle at the login screen). Starter is fine
+> again once nothing needs to process a real syllabus.
+> Render → syllabus-n8n → Settings → Instance Type → Starter.
+
 ---
 
 ## What you are building

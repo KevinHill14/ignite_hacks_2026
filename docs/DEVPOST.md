@@ -44,6 +44,41 @@ Sponsor tools used in the build:
 
 ---
 
+## Inspiration
+
+Honestly, it was how confusing all of it is.
+
+You get five syllabi at the start of term. Each one is twenty pages, each one
+is laid out differently, and the things you actually need are scattered through
+them. Due dates in one table, grade weights in another, required textbooks
+somewhere near the bottom, a lab fee mentioned once in a paragraph. Nothing is
+hidden. It is all written down. It is just spread across five documents written
+by five people who never talked to each other, and there is no version of it
+anywhere that shows you the term as one thing.
+
+So you read them once, you get the general shape, and you spend the next four
+months finding out the specifics at the worst possible moment. That is not a
+you problem. The format is the problem.
+
+### What it solves
+
+Termsheet turns those five PDFs into the two answers nobody currently has:
+
+**What is my term actually going to cost?** Every textbook, access code, lab
+kit and fee, totalled, with shared items counted once instead of twice. There
+is no single number for this anywhere right now, and it is the number that
+decides whether you can afford the semester.
+
+**When is it going to hurt?** Deadlines and costs on one timeline, so the weeks
+where several courses all want something show up before you are in them. Those
+are the same weeks you spend more and work fewer shifts, and no calendar or
+banking app knows that.
+
+Then it goes one step further and answers the question those two lead to: given
+what I have and what is coming in, am I going to make it. Not as a single date,
+which would be a guess, but as a probability across two thousand simulated
+terms.
+
 ## What the project does
 
 You drop in up to five syllabi, a full course load. Termsheet reads them and

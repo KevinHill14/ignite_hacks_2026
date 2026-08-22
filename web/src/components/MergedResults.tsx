@@ -5,6 +5,7 @@ import type { IngestResult } from "@/lib/types";
 import { mergeResults } from "@/lib/merge";
 import { buildIcs } from "@/lib/ics";
 import { RunwayForecast } from "@/components/RunwayForecast";
+import { TermSpine } from "@/components/TermSpine";
 
 /**
  * A whole course load on one axis.
@@ -177,6 +178,26 @@ export function MergedResults({
             ? "Worked example — nothing was written to a calendar"
             : `${merged.calendar.created} of ${merged.calendar.attempted} on your calendar`}
         </span>
+      </section>
+
+      {/* ------------------------------------------------------- the spine */}
+      <section className="spine">
+        <div className="spine__head">
+          <div>
+            <p className="eyebrow">The term, end to end</p>
+            <p style={{ margin: "6px 0 0", fontSize: 14, color: "var(--ink-soft)", maxWidth: "48ch" }}>
+              Every course on one axis. Deadlines above the line, money below
+              it — read straight down from a busy week to see what it also
+              costs you.
+            </p>
+          </div>
+          <div className="spine__legend">
+            <span><i className="k-time" /> Deadline</span>
+            <span><i className="k-money" /> Cost</span>
+          </div>
+        </div>
+        <TermSpine events={merged.events} costs={merged.costs} />
+        <p className="spine__hint">Click any mark for the detail behind it</p>
       </section>
 
       {/* --------------------------------------------------- crunch weeks */}

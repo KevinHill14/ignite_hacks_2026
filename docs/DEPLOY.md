@@ -88,7 +88,6 @@ npm run web:dev
    Copy the generated `INGEST_TOKEN` into the n8n **Header Auth** credential
    (header name `X-Ingest-Token`) — the two must match or every import fails
    with a 401.
-3. Set `ELEVENLABS_API_KEY` if you want the spoken briefing. Skip it and the
    button hides itself.
 
 ### The OAuth chicken-and-egg

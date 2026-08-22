@@ -29,11 +29,6 @@ services:
         generateValue: true
       - key: MAX_UPLOAD_MB
         value: "10"
-      # Optional: enables the spoken briefing. Leave unset to hide the button.
-      - key: ELEVENLABS_API_KEY
-        sync: false
-      - key: ELEVENLABS_VOICE_ID
-        sync: false
 
   # ------------------------------------------------------------------ n8n --
   - type: pserv # private service: no public URL, no inbound internet traffic

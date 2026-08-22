@@ -604,7 +604,25 @@ export function RunwayForecast({
                 />
                 <label htmlFor={`sp-${s.id}`}>
                   {s.label}
-                  <span className="spend__vol" title="How much this swings month to month">
+                  {/*
+                    "±18%" is meaningless on its own. Spelling out the dollar
+                    range it implies turns an opaque badge into a claim the
+                    user can disagree with — and correct.
+                  */}
+                  <span
+                    className="spend__vol"
+                    title={
+                      s.monthly > 0
+                        ? `Most months fall between ${money(
+                            Math.round(s.monthly * (1 - s.volatility)),
+                            currency,
+                          )} and ${money(
+                            Math.round(s.monthly * (1 + s.volatility)),
+                            currency,
+                          )}. Adjust the amount if that looks wrong.`
+                        : "How much this swings month to month."
+                    }
+                  >
                     ±{Math.round(s.volatility * 100)}%
                   </span>
                 </label>
@@ -653,6 +671,18 @@ export function RunwayForecast({
                 <div>
                   <p className="total__label">Chance you run short this term</p>
                   <p className="verdict__figure">{risk}%</p>
+                  {/*
+                    A bare percentage is unfalsifiable — it reads as a number
+                    the app made up. The raw count is checkable: it says
+                    exactly what was measured and how many times.
+                  */}
+                  <p className="verdict__basis">
+                    You went below $0 in{" "}
+                    <strong>
+                      {Math.round(forecast.probBroke * forecast.trials).toLocaleString()}
+                    </strong>{" "}
+                    of {forecast.trials.toLocaleString()} simulated terms
+                  </p>
                 </div>
                 <div className="outcomes">
                   <div className="outcome">

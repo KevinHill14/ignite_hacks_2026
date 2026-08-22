@@ -78,7 +78,6 @@ its own — no upload, no clicking.
 | **Claude Opus 5** | Structured extraction with a strict JSON schema and adaptive thinking. |
 | **Next.js 16** | The UI, and a server-side proxy that keeps the pipeline token out of the browser. |
 | **Google Calendar / Drive** | Where deadlines land, and the hands-off way syllabi arrive. |
-| **ElevenLabs** | Optional spoken term briefing. Script is templated from the figures, never model-written. |
 | **Render** | Deploy target. `render.yaml` runs the web app public and n8n private. |
 
 ---

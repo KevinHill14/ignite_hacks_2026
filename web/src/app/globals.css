@@ -1348,6 +1348,135 @@ select.field__input {
   padding-left: 11px;
 }
 
+.verdict__basis {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  max-width: 34ch;
+}
+
+.verdict__basis strong {
+  font-family: var(--font-mono);
+  color: var(--ink);
+}
+
+.spend__vol {
+  cursor: help;
+  border-bottom: 1px dotted var(--rule-strong);
+}
+
+/* --- timeline detail on click ---------------------------------------------- */
+
+.spine__hit {
+  cursor: pointer;
+}
+
+.spine__hit:hover line,
+.spine__hit:hover rect[fill^="var(--stamp"],
+.spine__hit:hover circle {
+  opacity: 0.72;
+}
+
+.spine__hit:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
+
+.spine__detail {
+  position: relative;
+  margin-top: 18px;
+  border: 2px solid var(--ink);
+  background: var(--paper-panel);
+  padding: 18px 44px 18px 20px;
+}
+
+.spine__close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.spine__close:hover {
+  color: var(--stamp);
+}
+
+.spine__detail-date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 4px;
+}
+
+.spine__detail-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.15rem;
+  letter-spacing: -0.015em;
+  margin: 0 0 8px;
+}
+
+.spine__detail-meta {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+
+.spine__detail-body {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  white-space: pre-line;
+  max-width: 74ch;
+}
+
+.spine__detail-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.spine__detail-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 6px;
+}
+
+.spine__detail-list li:last-child {
+  border-bottom: 0;
+}
+
+.spine__detail-list strong {
+  font-family: var(--font-mono);
+  color: var(--stamp);
+  white-space: nowrap;
+}
+
+.spine__hint {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 10px 0 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

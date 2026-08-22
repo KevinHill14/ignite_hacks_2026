@@ -107,8 +107,8 @@ Forwarding them verbatim leaks document contents and topology into the
 browser.
 
 **Mitigation.** `/api/ingest` logs the full upstream error server-side and
-returns a short, generic message with an appropriate status code. Same in
-`/api/briefing`.
+returns a short, generic message with an appropriate status code.
+
 
 ## 8. Browser-side hardening
 

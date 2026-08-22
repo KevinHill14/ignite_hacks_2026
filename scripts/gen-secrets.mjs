@@ -77,8 +77,6 @@ const webKeys = [
   "N8N_WEBHOOK_URL",
   "INGEST_TOKEN",
   "MAX_UPLOAD_MB",
-  "ELEVENLABS_API_KEY",
-  "ELEVENLABS_VOICE_ID",
 ];
 
 const webEnv = [

@@ -66,7 +66,14 @@ const CATEGORY_LABEL: Record<string, string> = {
  * hang downward as bars scaled by amount. Reading straight down from a
  * cluster of deadlines shows what that same week costs.
  */
+type SpineSelection =
+  | { kind: "event"; event: PlannedEvent }
+  | { kind: "costs"; date: string; items: (PlannedCost & { amount: number })[] };
+
 function TermSpine({ events, costs }: { events: PlannedEvent[]; costs: PlannedCost[] }) {
+  // Before the early return below — hooks cannot sit after a conditional exit.
+  const [selected, setSelected] = useState<SpineSelection | null>(null);
+
   const datedCosts = costs.filter(
     (c): c is PlannedCost & { neededBy: string; amount: number } =>
       Boolean(c.neededBy) && typeof c.amount === "number",
@@ -134,6 +141,7 @@ function TermSpine({ events, costs }: { events: PlannedEvent[]; costs: PlannedCo
   );
 
   return (
+    <>
     <svg
       className="spine__canvas"
       viewBox={`0 0 ${W} ${H}`}
@@ -186,8 +194,30 @@ function TermSpine({ events, costs }: { events: PlannedEvent[]; costs: PlannedCo
         const h = 22 + Math.min(weight / 40, 1) * (MAX_TICK - 22);
         const unsure = (e.confidence ?? 1) < 0.6;
         return (
-          <g key={`${e.date}-${e.summary}-${i}`} className="pop" style={{ animationDelay: `${450 + i * 26}ms` }}>
+          <g
+            key={`${e.date}-${e.summary}-${i}`}
+            className="pop spine__hit"
+            style={{ animationDelay: `${450 + i * 26}ms` }}
+            onClick={() => setSelected({ kind: "event", event: e })}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(k) => {
+              if (k.key === "Enter" || k.key === " ") {
+                k.preventDefault();
+                setSelected({ kind: "event", event: e });
+              }
+            }}
+            aria-label={`${shortDate(e.date)} — ${e.summary}. Show details.`}
+          >
             <title>{`${shortDate(e.date)} — ${e.summary}${weight ? ` (${weight}%)` : ""}`}</title>
+            {/* Invisible wide target: a 2px tick is not clickable in practice. */}
+            <rect
+              x={cx - 9}
+              y={AXIS_Y - h - 8}
+              width={18}
+              height={h + 12}
+              fill="transparent"
+            />
             <line
               x1={cx}
               y1={AXIS_Y}
@@ -208,7 +238,22 @@ function TermSpine({ events, costs }: { events: PlannedEvent[]; costs: PlannedCo
         const fullH = 14 + (d.total / biggestDay) * (MAX_BAR - 14);
         let offset = 0;
         return (
-          <g key={d.date} className="grow" style={{ animationDelay: `${700 + i * 60}ms` }}>
+          <g
+            key={d.date}
+            className="grow spine__hit"
+            style={{ animationDelay: `${700 + i * 60}ms` }}
+            onClick={() => setSelected({ kind: "costs", date: d.date, items: d.items })}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(k) => {
+              if (k.key === "Enter" || k.key === " ") {
+                k.preventDefault();
+                setSelected({ kind: "costs", date: d.date, items: d.items });
+              }
+            }}
+            aria-label={`${shortDate(d.date)} — ${money(d.total, d.items[0].currency)} of costs. Show details.`}
+          >
+            <rect x={cx - 9} y={AXIS_Y} width={18} height={fullH + 8} fill="transparent" />
             <title>
               {`${shortDate(d.date)} — ${money(d.total, d.items[0].currency)}\n` +
                 d.items.map((c) => `· ${c.label}: ${money(c.amount, c.currency)}`).join("\n")}
@@ -245,6 +290,73 @@ function TermSpine({ events, costs }: { events: PlannedEvent[]; costs: PlannedCo
         );
       })}
     </svg>
+
+    {/*
+      Detail on demand. The spine answers "when is it heavy"; this answers
+      "heavy with what", without cluttering the graphic for the 90% of the
+      time nobody is asking.
+    */}
+    {selected && (
+      <div className="spine__detail reveal">
+        <button
+          className="spine__close"
+          onClick={() => setSelected(null)}
+          aria-label="Close details"
+        >
+          ×
+        </button>
+
+        {selected.kind === "event" ? (
+          <>
+            <p className="spine__detail-date">{shortDate(selected.event.date)}</p>
+            <p className="spine__detail-title">{selected.event.summary}</p>
+            <p className="spine__detail-meta">
+              <span className="tag">{KIND_LABEL[selected.event.kind] ?? "Due"}</span>
+              {selected.event.weightPercent !== null &&
+                `${selected.event.weightPercent}% of your final grade`}
+              {(selected.event.confidence ?? 1) < 0.6 && (
+                <span className="tag is-unsure" style={{ marginLeft: 6 }}>
+                  Date inferred — verify it
+                </span>
+              )}
+            </p>
+            {selected.event.description && (
+              <p className="spine__detail-body">{selected.event.description}</p>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="spine__detail-date">{shortDate(selected.date)}</p>
+            <p className="spine__detail-title">
+              {money(
+                selected.items.reduce((s, c) => s + c.amount, 0),
+                selected.items[0].currency,
+              )}{" "}
+              due
+            </p>
+            <ul className="spine__detail-list">
+              {selected.items.map((c, i) => (
+                <li key={`${c.label}-${i}`}>
+                  <span>
+                    <span className={`tag${c.isMandatory ? "" : " is-optional"}`}>
+                      {c.isMandatory ? "Required" : "Optional"}
+                    </span>
+                    {c.label}
+                  </span>
+                  <strong>{money(c.amount, c.currency)}</strong>
+                </li>
+              ))}
+            </ul>
+            {selected.items[0].sourceQuote && (
+              <p className="spine__detail-body">
+                From the syllabus: “{selected.items[0].sourceQuote}”
+              </p>
+            )}
+          </>
+        )}
+      </div>
+    )}
+    </>
   );
 }
 
@@ -294,76 +406,6 @@ function DownloadCalendarButton({ result }: { result: IngestResult }) {
     <button className="btn" onClick={download} disabled={count === 0}>
       {done ? "Downloaded — open it to import" : `Add ${count} to my calendar`}
     </button>
-  );
-}
-
-/* ---------------------------------------------------------------- briefing */
-
-/**
- * Plays a spoken summary of the term. Degrades quietly: if the server has no
- * ElevenLabs key the button reports that once and stops offering itself,
- * rather than failing repeatedly.
- */
-function BriefingButton({ result }: { result: IngestResult }) {
-  const [state, setState] = useState<"idle" | "loading" | "playing" | "off">("idle");
-  const [script, setScript] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  if (state === "off") return null;
-
-  async function play() {
-    if (audioRef.current) {
-      void audioRef.current.play();
-      setState("playing");
-      return;
-    }
-
-    setState("loading");
-    try {
-      const response = await fetch("/api/briefing", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(result),
-      });
-
-      if (response.status === 501) {
-        setState("off");
-        return;
-      }
-      if (!response.ok) {
-        setState("idle");
-        return;
-      }
-
-      const header = response.headers.get("X-Briefing-Script");
-      if (header) setScript(decodeURIComponent(header));
-
-      const url = URL.createObjectURL(await response.blob());
-      const audio = new Audio(url);
-      audio.onended = () => setState("idle");
-      audioRef.current = audio;
-      await audio.play();
-      setState("playing");
-    } catch {
-      setState("idle");
-    }
-  }
-
-  return (
-    <div style={{ display: "grid", gap: 8, justifyItems: "start" }}>
-      <button className="btn" onClick={play} disabled={state === "loading"}>
-        {state === "loading"
-          ? "Preparing…"
-          : state === "playing"
-            ? "Playing briefing"
-            : "Hear the 30-second briefing"}
-      </button>
-      {script && (
-        <p style={{ margin: 0, fontSize: 13, color: "var(--ink-soft)", maxWidth: "60ch" }}>
-          {script}
-        </p>
-      )}
-    </div>
   );
 }
 
@@ -613,6 +655,7 @@ function Results({
           </div>
         </div>
         <TermSpine events={events} costs={costs} />
+        <p className="spine__hint">Click any mark for the detail behind it</p>
       </section>
 
       {/* two ledgers */}
@@ -745,7 +788,6 @@ function Results({
           Import another syllabus
         </button>
         <DownloadCalendarButton result={result} />
-        <BriefingButton result={result} />
       </div>
     </div>
   );

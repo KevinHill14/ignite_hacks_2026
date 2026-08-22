@@ -25,9 +25,27 @@ services:
         value: "22"
       - key: NODE_ENV
         value: production
-      # Internal address — resolves only inside Render's private network.
+      # PUBLIC address, not the internal one, and that is a workaround, not
+      # the design. http://syllabus-n8n:5678/... is what this should be:
+      # Render's own Connect panel confirms that is the correct internal
+      # address, and n8n answers it — just with the wrong answer. A request
+      # over the internal address gets back n8n's genuine 404 "webhook not
+      # registered" body at the exact moment a request to the public address
+      # gets 403 (found, credentials rejected) from the same instance, same
+      # published workflow, seconds apart. Bumping syllabus-n8n from Starter
+      # to Standard changed nothing, which rules out the OOM crash loop that
+      # explained every earlier failure in this file — this one is Render's
+      # private network delivering a stale or wrong answer between these two
+      # specific services, not n8n and not memory.
+      #
+      # The public URL is only usable as a stand-in because syllabus-n8n
+      # already has one for OAuth. Once Google Calendar auth is done and this
+      # service goes back to `type: pserv` (see the comment on that service
+      # below), that public URL disappears and this has to go back to the
+      # internal one — which means the private-networking problem has to
+      # actually get diagnosed before then, not just routed around.
       - key: N8N_WEBHOOK_URL
-        value: http://syllabus-n8n:5678/webhook/syllabus-ingest
+        value: https://syllabus-n8n-wnw8.onrender.com/webhook/syllabus-ingest
       # Shared secret. Generated once by Render, then copied into the n8n
       # header-auth credential by hand (n8n stores it encrypted).
       - key: INGEST_TOKEN

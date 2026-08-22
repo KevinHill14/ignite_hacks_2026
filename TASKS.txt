@@ -76,21 +76,46 @@ money, dates, or anything with a side effect, it is.
 
 
 ===============================================================================
-PRIORITY ORDER - Kevin's plan, 2026-08-22
+PRIORITY ORDER - Kevin's plan, updated 2026-08-22 late
 ===============================================================================
-  1. Task 1 + 2   UI design pass, including mobile
-  2. Task 8       Password gate      \  BOTH must land BEFORE the deploy.
-  3. Task 7       Rate limiting      /  A public URL without them means anyone
-                                        can drain the API credits, and a
-                                        password alone does not stop someone
-                                        who has the password from looping.
-  4. Task 13      Deploy to Render, so judges have somewhere to test
-  5. Task 12      Multi-syllabus upload (up to 5)
-  6. more fintech features - nice to have, not blocking
+  [x] Task 8    Password gate       DONE
+  [x] Task 7    Rate limiting       DONE
+                Both deploy blockers are cleared. Render is unblocked.
+
+  1. Task 13    Deploy to Render, so judges have somewhere to test
+  2. Task 12    Multi-syllabus upload (up to 5)   <-- IN PROGRESS, see below
+  3. Task 1 + 2 UI design pass, including mobile  <-- Kevin's friend
+  4. more fintech features - nice to have, not blocking
 
   Running underneath all of it: Task 5, collect more syllabi. It needs no
   coding, it unblocks task 12, and without it every extraction claim we make
   rests on a single computer science course.
+
+
+SECURITY AUDIT - 2026-08-22
+---------------------------
+Checked after adding the password gate. All clear:
+  - No password or API key appears in ANY commit, across all history
+  - .env and web/.env.local are gitignored and untracked
+  - Zero NEXT_PUBLIC_ variables, so no server secret can reach the browser
+    bundle. That prefix is the only thing that inlines a value client-side.
+  - APP_PASSWORD never appears in client code
+  - The cookie stores `expiry.HMAC(expiry, password)`. The password is the
+    signing key, never the payload, and HMAC is one-way — the cookie cannot be
+    reversed to recover it.
+  - Cookie is HttpOnly, SameSite=Lax, Secure in production
+  - Only /login and /api/login are ungated; everything else including
+    /api/ingest is behind the gate
+  - CSP, HSTS, nosniff, X-Frame-Options: DENY, Referrer-Policy all intact
+
+On "should the password be encrypted": no, and it should not be. It is
+configuration, not stored user data. What matters is that it never enters git,
+never reaches the browser, and is never written into the cookie — all three
+verified above. On Render it lives in the dashboard's env vars, which are
+encrypted at rest by Render.
+
+ROTATE BEFORE DEPLOY: the local test password is in a chat transcript. Set a
+different one in Render's environment, and that is the one judges get.
 
 
 ===============================================================================
@@ -187,18 +212,29 @@ NO CODING NEEDED
 CODING
 -------------------------------------------------------------------------------
 
-[ ] 7. Rate limiting on /api/ingest   <-- blocks public deploy
-       Owner: ____________
-       Anyone with the URL can upload in a loop and burn the Anthropic
-       credits. At $0.16 a run that is real money. Add a per-IP limit.
-       File: web/src/app/api/ingest/route.ts (self-contained, low collision
-       risk)
+[x] 7. Rate limiting on /api/ingest - DONE
+       3 uploads/minute and 25/day per IP, checked BEFORE the body is read so
+       a large upload cannot cost bandwidth before being rejected. Sliding
+       window, IP from x-forwarded-for.
+       Tune with RATE_LIMIT_PER_MINUTE / RATE_LIMIT_PER_DAY in .env.
+       KNOWN LIMIT: in-memory Map. Resets on redeploy, not shared across
+       instances. Correct for one Render service guarding a fixed budget; it
+       is not a Redis replacement.
+       Files: web/src/lib/rate-limit.ts, web/src/app/api/ingest/route.ts
 
-[ ] 8. Password-gate the web app      <-- blocks public deploy
-       Owner: ____________
-       Anyone who reaches the URL can import to whatever calendar is
-       connected. A single shared password in an env var is enough for a
-       hackathon. Middleware is probably the cleanest place.
+[x] 8. Password-gate the web app - DONE
+       Set APP_PASSWORD in .env and every page and API route requires sign-in.
+       Leave it BLANK for local work and the gate is off entirely, so nobody's
+       first clone hits a login wall.
+       Lives in web/src/proxy.ts - NOT middleware.ts, which is deprecated in
+       Next 16 and renamed. Writing middleware.ts would silently do nothing.
+       Session cookie is `<expiry>.<HMAC(expiry, password)>`: the expiry is
+       readable but tamper-evident, the signature cannot be replayed against a
+       new expiry, and the password itself is never in the cookie. HttpOnly,
+       SameSite=Lax, Secure in production. Wrong guesses cost a second each.
+       Files: web/src/lib/auth.ts, web/src/proxy.ts,
+              web/src/app/login/page.tsx, web/src/app/api/login/route.ts
+       Verify: npm run check:auth (25 checks)
 
 [ ] 9. OCR fallback for scanned syllabi
        Owner: ____________
@@ -223,7 +259,10 @@ CODING
        button would be a nice touch.
 
 [ ] 12. Multi-syllabus upload (up to 5)   <-- BIGGEST REMAINING FEATURE
-       Owner: ____________
+       Owner: a second Claude agent, started 2026-08-22 late
+       COORDINATE BEFORE TOUCHING THIS. Two people building the same UI will
+       collide badly - it needs page.tsx, which is already the highest-risk
+       file in the repo.
        HALF DONE. The merge logic is finished and tested; the UI is not built.
 
        Already written: web/src/lib/merge.ts + scripts/check-merge.mjs

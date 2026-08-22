@@ -36,6 +36,20 @@ services:
       # date should pollute something disposable, not your real schedule.
       - GOOGLE_CALENDAR_ID=${GOOGLE_CALENDAR_ID:-primary}
 
+      # Let workflow expressions read the variables above.
+      #
+      # n8n blocks $env unless this is the literal string "false" — unset means
+      # blocked, which is the opposite of the usual convention. Without it the
+      # Calendar node's $env.GOOGLE_CALENDAR_ID throws "access to env vars
+      # denied" and every event fails, while EXTRACTION_MODEL and
+      # GENERIC_TIMEZONE silently fall back to their defaults.
+      #
+      # The tradeoff: expressions can now read every variable in this
+      # container. That is acceptable here because the container holds only
+      # the variables listed above, and the alternative is hardcoding the
+      # calendar id and model into the workflow JSON.
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+
       # --- Hardening ----------------------------------------------------
       # Block the Code node from importing arbitrary node modules.
       - NODE_FUNCTION_ALLOW_EXTERNAL=

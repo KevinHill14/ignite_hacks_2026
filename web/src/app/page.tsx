@@ -565,6 +565,16 @@ function Results({
   const failureReasons = new Set(calendar.failed.map((f) => f.reason));
   const collapseFailures = calendar.failed.length > 3 && failureReasons.size === 1;
 
+  /*
+   * The worked example never touches a calendar, so it reports 0 created and
+   * 0 failed. Rendering that as "0 of 9 on your calendar" reads as a failure
+   * and makes people think the app is broken. A real run that fails records a
+   * reason for every event, so zero-created-with-zero-failures can only mean
+   * nothing was attempted.
+   */
+  const nothingWritten =
+    calendar.attempted > 0 && calendar.created === 0 && calendar.failed.length === 0;
+
   return (
     <div className="reveal">
       {/* receipt header */}
@@ -580,8 +590,10 @@ function Results({
               .join("  ·  ")}
           </p>
         </div>
-        <span className="receipt__calendar">
-          {calendar.created} of {calendar.attempted} on your calendar
+        <span className={`receipt__calendar${nothingWritten ? " is-sample" : ""}`}>
+          {nothingWritten
+            ? "Worked example — nothing was written to a calendar"
+            : `${calendar.created} of ${calendar.attempted} on your calendar`}
         </span>
       </section>
 

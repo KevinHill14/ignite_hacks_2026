@@ -780,6 +780,14 @@ body {
   padding: 7px 12px;
 }
 
+/* Sample data, not a failed import — muted so it does not read as an error. */
+.receipt__calendar.is-sample {
+  color: var(--ink-faint);
+  border-color: var(--rule);
+  border-style: dashed;
+  background: transparent;
+}
+
 /* --- buttons -------------------------------------------------------------- */
 
 .btn {

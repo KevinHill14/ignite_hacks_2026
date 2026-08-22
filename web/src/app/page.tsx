@@ -571,7 +571,10 @@ export default function Home() {
         {/* ------------------------------------------------------ masthead */}
         <header className="masthead">
           <div className="masthead__stamp">
-            <span className="masthead__form-no">Form SYL-1 · Term cost &amp; schedule</span>
+            <span className="wordmark">
+              Termsheet
+              <span className="wordmark__sub">the real terms of your semester</span>
+            </span>
             <span className="masthead__form-no">Powered by n8n + Claude</span>
           </div>
           <hr className="rule-heavy" />
@@ -580,10 +583,10 @@ export default function Home() {
             Your syllabus is <em>a bill</em> nobody itemized.
           </h1>
           <p className="masthead__lede">
-            Drop in the PDF. Every deadline goes straight onto your Google
-            Calendar, and every textbook, lab kit, access code, and exam fee
-            gets laid out on one timeline — so you find out what the term costs
-            now, not one surprise at a time.
+            Drop in your syllabi — up to five, a full course load. Every
+            deadline goes onto your calendar, and every textbook, lab kit and
+            fee lands on one timeline. So you find out what the term costs now,
+            not one surprise at a time.
           </p>
         </header>
 
@@ -750,8 +753,11 @@ export default function Home() {
         )}
 
         <footer className="footer">
-          <span>Syllabus → Calendar + Cost Timeline</span>
-          <span>Your file is parsed locally, then discarded</span>
+          <span>
+            <strong>Termsheet</strong> — every deadline and every dollar, out
+            of your syllabi
+          </span>
+          <span>Your file is read, then discarded. Nothing is stored.</span>
         </footer>
       </div>
     </main>

@@ -538,15 +538,13 @@ export function RunwayForecast({
     <section className="runway">
       <p className="eyebrow">Will it last?</p>
       <h3 className="col__title" style={{ marginTop: 6 }}>
-        Your term, simulated {forecast ? forecast.trials.toLocaleString() : "2,000"} times
+        Your term, run {forecast ? forecast.trials.toLocaleString() : "2,000"} times
       </h3>
       <p className="runway__blurb">
-        A single date would be a guess dressed up as a fact — nobody spends
-        exactly the same amount every month. So each category gets a realistic
-        spread and the whole term runs a few thousand times. The course costs
-        pulled from your syllabus stay fixed, because those are the one part we
-        actually know. Nothing you type here leaves this tab.
+        Nobody spends the same amount every month, so a single date would be a
+        guess. Your syllabus costs stay fixed — those we know.
       </p>
+      <p className="runway__privacy">Nothing you type here leaves this tab.</p>
 
       <div className="runway__grid">
         <div>
@@ -677,12 +675,93 @@ export function RunwayForecast({
         </div>
 
         <div>
+          {/*
+            The aid breakdown sits ABOVE the forecast and outside it on
+            purpose. Where your aid goes does not depend on your bank balance,
+
+          {/*
+            Above the forecast and outside it on purpose. Where your aid
+            goes does not depend on your bank balance, so gating it behind
+            one made the feature look broken to anyone who filled in their
+            OSAP and stopped there.
+          */}
+            {settlement && settlement.gross > 0 && (
+              <div className="aid-reveal">
+                <p className="total__label">Where your aid actually goes</p>
+                <div className="aid-reveal__flow">
+                  <div>
+                    <span className="aid-reveal__num">{money(settlement.gross, currency)}</span>
+                    <span className="aid-reveal__cap">on paper</span>
+                  </div>
+                  <span className="aid-reveal__arrow">→</span>
+                  <div>
+                    <span className="aid-reveal__num is-out">
+                      −{money(settlement.toSchool, currency)}
+                    </span>
+                    <span className="aid-reveal__cap">
+                      straight to the school ({Math.round(settlement.withheldShare * 100)}%)
+                    </span>
+                  </div>
+                  <span className="aid-reveal__arrow">→</span>
+                  <div>
+                    <span className="aid-reveal__num is-in">
+                      {money(settlement.toStudent, currency)}
+                    </span>
+                    <span className="aid-reveal__cap">reaches your bank</span>
+                  </div>
+                </div>
+
+                <table className="aid-reveal__table">
+                  <tbody>
+                    {settlement.ledger.map((l, i) => (
+                      <tr key={`${l.source.id}-${i}`}>
+                        <td>{monthLabel(l.source.month, true)}</td>
+                        <td className="is-name">{l.source.label}</td>
+                        <td>{money(l.source.amount, currency)}</td>
+                        <td className="is-out">
+                          {l.toSchool > 0 ? `−${money(l.toSchool, currency)}` : "—"}
+                        </td>
+                        <td className="is-in">
+                          {l.toStudent > 0 ? money(l.toStudent, currency) : "nothing"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {settlement.stillOwed > 0 && (
+                  <p className="aid-reveal__warn">
+                    Your aid does not cover tuition — {money(settlement.stillOwed, currency)} is
+                    still owed to the school and is not counted as a cost above.
+                  </p>
+                )}
+                {(() => {
+                  const outside = settlement.ledger.filter(
+                    (l) => l.toStudent > 0 && !months.includes(l.source.month),
+                  );
+                  if (outside.length === 0) return null;
+                  const total = outside.reduce((s, l) => s + l.toStudent, 0);
+                  const early = outside.every((l) => l.source.month < months[0]);
+                  return (
+                    <p className="aid-reveal__warn">
+                      {money(total, currency)} of this lands{" "}
+                      {early ? "before your term starts" : "outside your term window"}
+                      , so it is not counted as income in the forecast.{" "}
+                      {early
+                        ? "It should already be part of the balance you entered."
+                        : "It arrives after the last date on your syllabus."}
+                    </p>
+                  );
+                })()}
+              </div>
+            )}
+
           {!forecast ? (
             <div className="verdict">
-              <p className="total__label">Waiting on your balance</p>
+              <p className="total__label">Now add your balance</p>
               <p className="verdict__note">
-                Enter what you have today and the term gets simulated against
-                the costs above.
+                Enter what you have today and the whole term gets simulated
+                against the costs above.
               </p>
             </div>
           ) : (
@@ -732,76 +811,6 @@ export function RunwayForecast({
                 </div>
               </div>
 
-              {settlement && settlement.gross > 0 && (
-                <div className="aid-reveal">
-                  <p className="total__label">Where your aid actually goes</p>
-                  <div className="aid-reveal__flow">
-                    <div>
-                      <span className="aid-reveal__num">{money(settlement.gross, currency)}</span>
-                      <span className="aid-reveal__cap">on paper</span>
-                    </div>
-                    <span className="aid-reveal__arrow">→</span>
-                    <div>
-                      <span className="aid-reveal__num is-out">
-                        −{money(settlement.toSchool, currency)}
-                      </span>
-                      <span className="aid-reveal__cap">
-                        straight to the school ({Math.round(settlement.withheldShare * 100)}%)
-                      </span>
-                    </div>
-                    <span className="aid-reveal__arrow">→</span>
-                    <div>
-                      <span className="aid-reveal__num is-in">
-                        {money(settlement.toStudent, currency)}
-                      </span>
-                      <span className="aid-reveal__cap">reaches your bank</span>
-                    </div>
-                  </div>
-
-                  <table className="aid-reveal__table">
-                    <tbody>
-                      {settlement.ledger.map((l, i) => (
-                        <tr key={`${l.source.id}-${i}`}>
-                          <td>{monthLabel(l.source.month, true)}</td>
-                          <td className="is-name">{l.source.label}</td>
-                          <td>{money(l.source.amount, currency)}</td>
-                          <td className="is-out">
-                            {l.toSchool > 0 ? `−${money(l.toSchool, currency)}` : "—"}
-                          </td>
-                          <td className="is-in">
-                            {l.toStudent > 0 ? money(l.toStudent, currency) : "nothing"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-
-                  {settlement.stillOwed > 0 && (
-                    <p className="aid-reveal__warn">
-                      Your aid does not cover tuition — {money(settlement.stillOwed, currency)} is
-                      still owed to the school and is not counted as a cost above.
-                    </p>
-                  )}
-                  {(() => {
-                    const outside = settlement.ledger.filter(
-                      (l) => l.toStudent > 0 && !months.includes(l.source.month),
-                    );
-                    if (outside.length === 0) return null;
-                    const total = outside.reduce((s, l) => s + l.toStudent, 0);
-                    const early = outside.every((l) => l.source.month < months[0]);
-                    return (
-                      <p className="aid-reveal__warn">
-                        {money(total, currency)} of this lands{" "}
-                        {early ? "before your term starts" : "outside your term window"}
-                        , so it is not counted as income in the forecast.{" "}
-                        {early
-                          ? "It should already be part of the balance you entered."
-                          : "It arrives after the last date on your syllabus."}
-                      </p>
-                    );
-                  })()}
-                </div>
-              )}
 
               <div className="fan__wrap">
                 <div className="fan__legend">

@@ -1937,3 +1937,39 @@ select.field__input {
 .levers__effect strong {
   color: var(--ink);
 }
+
+/* --- wordmark -------------------------------------------------------------- */
+
+.wordmark {
+  display: grid;
+  gap: 1px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.02rem;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.wordmark__sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.footer strong {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.runway__privacy {
+  margin: 6px 0 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}

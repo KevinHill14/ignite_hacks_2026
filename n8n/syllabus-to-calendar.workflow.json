@@ -199,15 +199,12 @@
     },
     {
       "parameters": {
-        "fieldToSplitOut": "events",
-        "include": "selectedOtherFields",
-        "fieldsToInclude": "course, timezone",
-        "options": {}
+        "jsCode": "/**\n * One n8n item per calendar event, with the event's fields at the root of\n * `json` where the Google Calendar node expects to find them.\n *\n * This was a Split Out node. It nested each event under an `events` key\n * instead of spreading it, so `$json.start` and `$json.summary` resolved to\n * undefined. The Calendar node does `moment.tz(undefined, tz)`, which is\n * *now* rather than an error — so all eighteen events were created,\n * successfully, untitled, and stacked on today's date. A silent wrong answer\n * rather than a failure, which is why the run reported 18/18.\n *\n * Doing the mapping explicitly removes the guesswork about what the node\n * spreads and what it wraps.\n */\n\nconst plan = $input.first().json;\nconst events = Array.isArray(plan.events) ? plan.events : [];\n\nreturn events.map((event) => {\n  // Fail loudly rather than let another empty date reach Google.\n  if (!event.start || !event.summary) {\n    throw new Error(\n      `Event is missing start or summary: ${JSON.stringify(event).slice(0, 200)}`\n    );\n  }\n  return {\n    json: {\n      ...event,\n      course: plan.course,\n      timezone: event.timezone || plan.timezone,\n    },\n  };\n});\n"
       },
       "id": "a1000000-0000-4000-8000-000000000008",
       "name": "One Item Per Event",
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [800, 320]
     },
     {

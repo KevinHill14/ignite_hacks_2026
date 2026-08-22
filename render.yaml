@@ -104,9 +104,11 @@ services:
         value: "none"
       - key: N8N_PAYLOAD_SIZE_MAX
         value: "24"
-      # Google OAuth callbacks must reach n8n. A private service has no public
-      # URL, so run the OAuth connect step locally, then restore the n8n volume
-      # here — or temporarily switch this to `type: web` to authorise, and
-      # switch it back. See docs/DEPLOY.md.
-      - key: WEBHOOK_URL
-        sync: false
+      # WEBHOOK_URL is deliberately NOT set here. It only affects the URLs n8n
+      # advertises for its own webhooks, and nothing depends on those: the web
+      # app reaches n8n by internal service name, and the Drive trigger ships
+      # disabled. Marking it `sync: false` made Render demand a value that
+      # cannot exist until the service has a URL, which fails the sync.
+      #
+      # If you later enable Google OAuth or the Drive trigger, add it by hand
+      # in the dashboard once you know the host.

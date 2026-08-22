@@ -13,17 +13,28 @@ from their own machine to get past it.
 
 This decides whether you need a test-user list at all.
 
-**If everyone on the team has a school Google account** (`@uwo.ca` or
-similar) **and you create the Cloud project signed in as that account**, you
-can set the consent screen to **Internal**. Everyone in the school's Google
-Workspace is then allowed automatically — no test-user list, no 7-day token
-expiry, nothing to maintain. This is by far the easier path if it's
-available to you.
+**Internal** allows everyone in *one* Google Workspace organisation with no
+test-user list and no 7-day token expiry. It only works if every single
+person is in that same org.
 
-**Otherwise** (personal Gmail accounts, or the project lives under a personal
-account) you must use **External** + a test-user list. That works fine, but
-read the "7-day expiry" warning at the bottom before you set it up weeks
-ahead of the demo.
+**This team is mixed** — Waterloo and Western are two separate Workspace
+orgs, so Internal would let in exactly one school and lock out the other.
+**Use External and add everyone to the test-user list** (Part 2).
+
+### Build it on a personal Gmail, not a school account
+
+Create the Cloud project signed in to a **personal Gmail account**, not
+`@uwaterloo.ca` or `@uwo.ca`.
+
+University Workspace accounts are centrally administered, and admins
+routinely restrict two things that would stop you cold: creating Google Cloud
+projects at all, and consenting to unverified third-party OAuth apps. You do
+not want to discover either the night before a deadline.
+
+The same restriction can bite on the *consenting* side: if a teammate's
+`@uwo.ca` account refuses at the consent screen with a message about the
+administrator, that's IT policy and there is no way around it. Have them
+connect a personal Gmail instead.
 
 ---
 
@@ -51,8 +62,8 @@ one of them fails later with a confusing 403.
 **APIs & Services → OAuth consent screen.** Google has been rebranding this
 area to **Google Auth Platform**, so it may be labelled either way.
 
-- **User type**: `Internal` if your school Workspace allows it (see above),
-  otherwise `External`.
+- **User type**: `External` (see above — a mixed-school team can't use
+  `Internal`).
 - **App name**: anything — your teammates will see it on the consent screen.
 - **User support email** and **Developer contact email**: your own.
 - Save through to the end.
@@ -95,8 +106,6 @@ works for the whole team. You do not need a client per person.
 ---
 
 ## Part 2 — Letting everyone else test
-
-Skip this entirely if you used **Internal**.
 
 On **External**, only accounts on the test-user list can connect. Everyone
 else — including people who have the client ID and secret — is refused.
@@ -203,16 +212,17 @@ explains why.
 For a hackathon this usually doesn't bite, but it does if you set OAuth up
 early and demo weeks later.
 
-Your options:
+It does **not** affect a demo recorded within a week of connecting.
 
-- **Just reconnect.** Click **Connect** again in n8n before the demo. Takes
-  ten seconds. Do it the morning of, not the night before, and you'll never
-  think about this again.
-- **Use Internal** if your school Workspace allows it — no expiry.
+Your options if you're past that:
+
+- **Just reconnect.** Click **Connect** again in n8n. Takes ten seconds. Do
+  it the morning of a demo, not the night before, and you'll never think
+  about this again.
 - **Publish the app** (consent screen → *Publish app*). Without verification
   you get a "Google hasn't verified this app" interstitial that you click
-  through via *Advanced → Go to (unsafe)*. Fine for a personal throwaway
-  calendar, ugly to do live on stage.
+  through via *Advanced → Go to (unsafe)*. Fine for a throwaway calendar,
+  ugly to do live on stage.
 
 **Rehearse the demo the same day you present it.** That catches this and
 everything else.

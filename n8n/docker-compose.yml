@@ -29,6 +29,8 @@ services:
       - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5678/}
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-America/Toronto}
       - TZ=${GENERIC_TIMEZONE:-America/Toronto}
+      # Swap the extraction model without editing the workflow.
+      - EXTRACTION_MODEL=${EXTRACTION_MODEL:-claude-opus-5}
 
       # --- Hardening ----------------------------------------------------
       # Block the Code node from importing arbitrary node modules.

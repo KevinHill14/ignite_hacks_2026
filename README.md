@@ -21,7 +21,7 @@ Built for IgniteHacks 2026, fintech track.
 
 ## Try it
 
-**Live demo: https://termsheetdemo.vercel.app**
+**Live demo: https://termsheetdemo.vercel.app**  (NOTE - Previously hosted on Render. However, I do not want to pay for that. I have transferred the web service to Vercel with no backend. You can test the UI, but you can not actually read syllabi unless you do so locally with your own keys, thanks for understanding!)
 
 No password, no account, nothing to install. Under the upload box there is a
 line reading "See an example first" with two links, **one course** and **a full

@@ -21,10 +21,13 @@ Built for IgniteHacks 2026, fintech track.
 
 ## Try it
 
-**Live: https://syllabus-web.onrender.com**
+> **The hosted deployment is currently down.** It was taken offline after
+> IgniteHacks to stop the hosting bill. To bring it back, see
+> [docs/REDEPLOY.md](docs/REDEPLOY.md), which takes about 25 minutes. To run it
+> locally instead, see [Run it locally](#run-it-locally) below.
 
-The site is password gated, because it runs a real model and writes to a real
-calendar. The password is included with the submission.
+When it is up, the site is password gated, because it runs a real model and
+writes to a real calendar.
 
 You do not need a syllabus to see the whole product. On the landing page there
 is a line under the upload box that reads "See an example first" with two
@@ -246,7 +249,8 @@ scripts/
   check-*.mjs            assertion suites for the pure-TypeScript logic
 docs/
   SECURITY.md            threat model and mitigations
-  RENDER-DEPLOY.md       deployment, with the failures called out
+  REDEPLOY.md            putting it back on Render after teardown
+  RENDER-DEPLOY.md       first-time deployment, with the failures called out
   GOOGLE-OAUTH.md        Google Cloud setup
   TEAMMATE-SETUP.md      slower onboarding walkthrough
   DEVPOST.md             submission writeup

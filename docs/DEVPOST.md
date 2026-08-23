@@ -356,6 +356,10 @@ Live: **https://syllabus-web.onrender.com**
 
 Password provided with the submission.
 
+> Kept as a record of what was submitted. The deployment was taken down after
+> judging to stop the hosting bill, so that URL is dead. See
+> [REDEPLOY.md](REDEPLOY.md) to bring it back.
+
 There are two worked examples on the page that need no account and no upload,
 if you would rather not hunt for a syllabus. They are under the upload box,
 labelled "See an example first".

@@ -3,6 +3,16 @@
 # Two services. The web app is public; n8n is private and holds every
 # credential. They talk over Render's internal network, so the pipeline
 # webhook is never exposed to the internet.
+#
+# ---------------------------------------------------------------------------
+# REBUILDING FROM SCRATCH? Read docs/REDEPLOY.md first.
+#
+# Three lines below hardcode n8n's public hostname, which Render assigns and
+# which WILL BE DIFFERENT on a fresh deploy. The name `syllabus-n8n` is taken
+# globally, so Render appends its own random suffix (it was `-wnw8` last time).
+# Search this file for `onrender.com` and update all three, or the web app
+# posts into nothing and Google OAuth fails on a state mismatch.
+# ---------------------------------------------------------------------------
 
 services:
   # --------------------------------------------------------------- web app --
@@ -77,7 +87,16 @@ services:
   - type: web
     name: syllabus-n8n
     runtime: image
-    plan: starter
+    # standard, not starter, and this is not optional if anyone will actually
+    # process a syllabus. On starter (512 MB) n8n boots fine and then dies with
+    # a JavaScript heap OOM the moment it runs the real pipeline, because PDF
+    # extraction plus a live model call plus a calendar write need far more
+    # memory than sitting idle at the login screen does. The NODE_OPTIONS entry
+    # below is what gets it through boot; standard is what gets it through use.
+    #
+    # Starter is fine if you only want the worked examples, but those need no
+    # n8n at all, so in that case do not deploy this service.
+    plan: standard
     # n8n's own liveness endpoint. Render marks a web service unhealthy and
     # restarts it if this fails, and n8n takes a while to boot on first run.
     healthCheckPath: /healthz

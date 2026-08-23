@@ -21,13 +21,24 @@ Built for IgniteHacks 2026, fintech track.
 
 ## Try it
 
-> **The hosted deployment is currently down.** It was taken offline after
-> IgniteHacks to stop the hosting bill. To bring it back, see
-> [docs/REDEPLOY.md](docs/REDEPLOY.md), which takes about 25 minutes. To run it
-> locally instead, see [Run it locally](#run-it-locally) below.
+**Live demo: https://termsheetdemo.vercel.app**
 
-When it is up, the site is password gated, because it runs a real model and
-writes to a real calendar.
+No password, no account, nothing to install. Under the upload box there is a
+line reading "See an example first" with two links, **one course** and **a full
+course load**. Both render the complete results view instantly: the term spine,
+crunch weeks, shared-cost deduplication, per-course totals and the Monte Carlo
+forecast.
+
+**Uploading your own syllabus does not work on that link**, and that is
+deliberate. Extraction needs the n8n pipeline and an Anthropic key, and running
+those costs money per upload, so the public demo is the front end alone. The
+worked examples are the real interface driving real merge, dedup and simulation
+code, not screenshots.
+
+To run the full pipeline, either [run it locally](#run-it-locally) below, or
+redeploy the backend with [docs/REDEPLOY.md](docs/REDEPLOY.md), about 25
+minutes. Deployed that way the site is password gated, because it runs a real
+model and writes to a real calendar.
 
 You do not need a syllabus to see the whole product. On the landing page there
 is a line under the upload box that reads "See an example first" with two
